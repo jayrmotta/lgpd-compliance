@@ -12,12 +12,12 @@ jest.mock('bcryptjs', () => ({
   compare: jest.fn()
 }));
 
-const { compare } = require('bcryptjs');
+import { compare } from 'bcryptjs';
 
 describe('/api/auth/login', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     // Clear users before each test
-    clearAllUsers();
+    await clearAllUsers();
     // Reset mock
     (compare as jest.Mock).mockClear();
   });
@@ -70,12 +70,10 @@ describe('/api/auth/login', () => {
   it('should return invalid credentials for wrong password', async () => {
     // Create a test user
     const hashedPassword = await hash('CorrectPassword123!', 12);
-    addUser({
-      id: 'test-user-1',
+    await addUser({
       email: 'user@example.com',
       passwordHash: hashedPassword,
-      userType: 'data_subject',
-      createdAt: new Date()
+      userType: 'data_subject'
     });
 
     // Mock bcrypt compare to return false (wrong password)
@@ -97,12 +95,10 @@ describe('/api/auth/login', () => {
   it('should successfully login with valid credentials', async () => {
     // Create a test user
     const hashedPassword = await hash('CorrectPassword123!', 12);
-    addUser({
-      id: 'test-user-1',
+    await addUser({
       email: 'user@example.com',
       passwordHash: hashedPassword,
-      userType: 'data_subject',
-      createdAt: new Date()
+      userType: 'data_subject'
     });
 
     // Mock bcrypt compare to return true (correct password)
@@ -119,27 +115,24 @@ describe('/api/auth/login', () => {
     expect(response.status).toBe(200);
     expect(responseData.code).toBe('LOGIN_SUCCESS');
     expect(responseData.data).toMatchObject({
-      token: expect.any(String),
       user: {
-        userId: 'test-user-1',
+        userId: expect.any(String),
         email: 'user@example.com',
         userType: 'data_subject'
       }
     });
-    expect(responseData.data.token).toBeDefined();
-    expect(responseData.data.token.split('.').length).toBe(3); // JWT format check
+    // Check that JWT token is in Authorization header
+    expect(response.headers.get('Authorization')).toMatch(/^Bearer .+/);
     expect(compare).toHaveBeenCalledWith('CorrectPassword123!', hashedPassword);
   });
 
   it('should handle case-insensitive email matching', async () => {
     // Create user with lowercase email
     const hashedPassword = await hash('Password123!', 12);
-    addUser({
-      id: 'test-user-1',
+    await addUser({
       email: 'user@example.com',
       passwordHash: hashedPassword,
-      userType: 'data_subject',
-      createdAt: new Date()
+      userType: 'data_subject'
     });
 
     // Mock bcrypt compare to return true
@@ -169,12 +162,10 @@ describe('/api/auth/login', () => {
 
     // Test 2: Existing user with wrong password
     const hashedPassword = await hash('CorrectPassword123!', 12);
-    addUser({
-      id: 'test-user-1',
+    await addUser({
       email: 'user@example.com',
       passwordHash: hashedPassword,
-      userType: 'data_subject',
-      createdAt: new Date()
+      userType: 'data_subject'
     });
 
     (compare as jest.Mock).mockResolvedValue(false);

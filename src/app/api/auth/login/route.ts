@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     let body: LoginRequest;
     try {
       body = await request.json();
-    } catch (parseError) {
+    } catch {
       return NextResponse.json(
         { code: 'VALIDATION_INVALID_JSON' } as APIResponse,
         { status: 400 }
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Find user by email
-    const user = findUserByEmail(email);
+    const user = await findUserByEmail(email);
     
     if (!user) {
       // Generic error message to prevent email enumeration
@@ -75,11 +75,10 @@ export async function POST(request: NextRequest) {
       userType: user.userType
     });
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       { 
         code: 'LOGIN_SUCCESS',
         data: {
-          token,
           user: {
             userId: user.id,
             email: user.email,
@@ -89,6 +88,19 @@ export async function POST(request: NextRequest) {
       } as APIResponse,
       { status: 200 }
     );
+
+    // Set JWT token in Authorization header
+    response.headers.set('Authorization', `Bearer ${token}`);
+    
+    // Also set as a secure HTTP-only cookie for extra security
+    response.cookies.set('auth-token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 // 24 hours
+    });
+
+    return response;
 
   } catch (error) {
     console.error('Login error:', error);

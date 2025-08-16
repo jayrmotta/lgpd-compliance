@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 interface FormData {
   email: string;
@@ -14,21 +14,11 @@ interface FormErrors {
   general?: string;
 }
 
-// Error code translations
-const errorMessages: Record<string, string> = {
-  VALIDATION_REQUIRED_FIELDS_MISSING: 'Email e senha são obrigatórios',
-  VALIDATION_EMAIL_INVALID: 'Formato de email inválido',
-  INVALID_CREDENTIALS: 'Email ou senha incorretos',
-  SERVER_ERROR: 'Erro interno do servidor',
-};
-
-const successMessages: Record<string, string> = {
-  LOGIN_SUCCESS: 'Login realizado com sucesso',
-  PASSWORD_RESET_REQUESTED: 'Se este email existe em nosso sistema, você receberá instruções para redefinir sua senha',
-};
+import { ERROR_MESSAGES, SUCCESS_MESSAGES, CLIENT_MESSAGES } from '@/lib/message-constants';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [formData, setFormData] = useState<FormData>({
     email: '',
     password: ''
@@ -37,6 +27,14 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isPasswordResetMode, setIsPasswordResetMode] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+
+  useEffect(() => {
+    // Check for auth required message
+    const message = searchParams.get('message');
+    if (message === 'auth-required') {
+      setErrors({ general: 'Por favor, faça login para enviar solicitações LGPD' });
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,13 +46,13 @@ export default function LoginPage() {
     const newErrors: FormErrors = {};
     
     if (!formData.email) {
-      newErrors.email = 'Email é obrigatório';
+      newErrors.email = CLIENT_MESSAGES.EMAIL_REQUIRED;
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email inválido';
+      newErrors.email = CLIENT_MESSAGES.EMAIL_INVALID;
     }
 
     if (!isPasswordResetMode && !formData.password) {
-      newErrors.password = 'Senha é obrigatória';
+      newErrors.password = CLIENT_MESSAGES.PASSWORD_REQUIRED;
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -67,6 +65,13 @@ export default function LoginPage() {
       const endpoint = isPasswordResetMode ? '/api/auth/password-reset' : '/api/auth/login';
       const body = isPasswordResetMode ? { email: formData.email } : formData;
 
+      // DEBUG: Log the request
+      console.log('Login Request:', {
+        endpoint,
+        body: body,
+        bodyStringified: JSON.stringify(body)
+      });
+
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -76,25 +81,44 @@ export default function LoginPage() {
       });
 
       const responseData = await response.json();
+      
+      // Extract JWT token from Authorization header
+      const authHeader = response.headers.get('Authorization');
+      const token = authHeader?.replace('Bearer ', '') || null;
+      
+      // DEBUG: Log the response
+      console.log('Login API Response:', {
+        status: response.status,
+        ok: response.ok,
+        data: responseData,
+        authHeader: authHeader,
+        extractedToken: token ? `${token.substring(0, 20)}...` : null
+      });
 
       if (response.ok) {
         if (responseData.code === 'LOGIN_SUCCESS') {
-          // Store login state
+          // Store login state and JWT token from header
           localStorage.setItem('isLoggedIn', 'true');
           localStorage.setItem('userEmail', formData.email);
+          if (token) {
+            localStorage.setItem('authToken', token);
+            console.log('Login successful, token stored from header, redirecting to dashboard');
+          } else {
+            console.warn('Login successful but no token found in Authorization header');
+          }
           router.push('/dashboard');
         } else if (responseData.code === 'PASSWORD_RESET_REQUESTED') {
-          const successMsg = successMessages[responseData.code];
+          const successMsg = SUCCESS_MESSAGES[responseData.code];
           setSuccessMessage(successMsg);
         }
       } else if (responseData.code) {
-        const errorMsg = errorMessages[responseData.code] || 'Erro desconhecido';
+        const errorMsg = ERROR_MESSAGES[responseData.code] || 'Erro desconhecido';
         setErrors({ general: errorMsg });
       } else {
         setErrors({ general: isPasswordResetMode ? 'Erro ao solicitar reset' : 'Erro no login' });
       }
-    } catch (error) {
-      setErrors({ general: 'Erro de conexão. Tente novamente.' });
+    } catch {
+      setErrors({ general: CLIENT_MESSAGES.CONNECTION_ERROR });
     } finally {
       setIsLoading(false);
     }
@@ -117,10 +141,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold text-center mb-6">
-          {isPasswordResetMode ? 'Recuperar Senha - LGPD Compliance' : 'Login - LGPD Compliance'}
+    <div className="min-h-screen flex items-center justify-center bg-gray-900">
+      <div className="max-w-md w-full bg-gray-800 p-8 rounded-lg shadow-md">
+        <h1 className="text-2xl font-bold text-center mb-6 text-white">
+          {isPasswordResetMode ? 'Recuperar Senha - Conformidade LGPD' : 'Entrar - Conformidade LGPD'}
         </h1>
         
         {errors.general && (
@@ -137,8 +161,8 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email
+            <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
+              E-mail
             </label>
             <input
               data-testid="email-input"
@@ -147,7 +171,7 @@ export default function LoginPage() {
               name="email"
               value={formData.email}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
             {errors.email && (
@@ -157,7 +181,7 @@ export default function LoginPage() {
 
           {!isPasswordResetMode && (
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1">
                 Senha
               </label>
               <input
@@ -167,7 +191,7 @@ export default function LoginPage() {
                 name="password"
                 value={formData.password}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
               {errors.password && (
@@ -209,13 +233,13 @@ export default function LoginPage() {
                 onClick={() => setIsPasswordResetMode(false)}
                 className="text-blue-600 hover:underline bg-transparent border-0 p-0 cursor-pointer underline-offset-2"
               >
-                Voltar ao Login
+                Voltar ao Acesso
               </button>
             </div>
           )}
           
           <div className="text-center">
-            <p className="text-gray-600">
+            <p className="text-gray-300">
               Não tem uma conta?{' '}
               <a href="/register" className="text-blue-600 hover:underline">
                 Cadastre-se

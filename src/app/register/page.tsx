@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ERROR_MESSAGES, SUCCESS_MESSAGES, CLIENT_MESSAGES } from '@/lib/message-constants';
 
 interface FormData {
   email: string;
@@ -15,18 +16,6 @@ interface FormErrors {
   general?: string;
 }
 
-// Error code translations
-const errorMessages: Record<string, string> = {
-  VALIDATION_REQUIRED_FIELDS_MISSING: 'Todos os campos são obrigatórios',
-  VALIDATION_EMAIL_INVALID: 'Formato de email inválido',
-  PASSWORD_TOO_WEAK: 'A senha deve ter pelo menos 8 caracteres, incluindo maiúscula, minúscula e caractere especial',
-  VALIDATION_USER_TYPE_INVALID: 'Tipo de usuário inválido',
-  SERVER_ERROR: 'Erro interno do servidor',
-};
-
-const successMessages: Record<string, string> = {
-  REGISTRATION_SUCCESS: 'Cadastro realizado com sucesso',
-};
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -49,13 +38,18 @@ export default function RegisterPage() {
     const newErrors: FormErrors = {};
     
     if (!formData.email) {
-      newErrors.email = 'Email é obrigatório';
+      newErrors.email = CLIENT_MESSAGES.EMAIL_REQUIRED;
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email inválido';
+      newErrors.email = CLIENT_MESSAGES.EMAIL_INVALID;
     }
 
     if (!formData.password) {
-      newErrors.password = 'Senha é obrigatória';
+      newErrors.password = CLIENT_MESSAGES.PASSWORD_REQUIRED;
+    } else if (formData.password.length < 8 || 
+               !/[A-Z]/.test(formData.password) || 
+               !/[a-z]/.test(formData.password) || 
+               !/[!@#$%^&*(),.?":{}|<>]/.test(formData.password)) {
+      newErrors.password = 'A senha deve ter pelo menos 8 caracteres, incluindo maiúscula, minúscula e caractere especial';
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -76,19 +70,19 @@ export default function RegisterPage() {
       const responseData = await response.json();
 
       if (response.ok && responseData.code) {
-        const successMsg = successMessages[responseData.code] || 'Operação realizada com sucesso';
+        const successMsg = SUCCESS_MESSAGES[responseData.code] || 'Operação realizada com sucesso';
         setSuccessMessage(successMsg);
         setTimeout(() => {
           router.push('/login');
         }, 2000);
       } else if (responseData.code) {
-        const errorMsg = errorMessages[responseData.code] || 'Erro desconhecido';
+        const errorMsg = ERROR_MESSAGES[responseData.code] || 'Erro desconhecido';
         setErrors({ general: errorMsg });
       } else {
         setErrors({ general: 'Erro no cadastro' });
       }
     } catch {
-      setErrors({ general: 'Erro de conexão. Tente novamente.' });
+      setErrors({ general: CLIENT_MESSAGES.CONNECTION_ERROR });
     } finally {
       setIsLoading(false);
     }
@@ -106,21 +100,21 @@ export default function RegisterPage() {
 
   if (successMessage) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md">
-          <div data-testid="success-message" className="text-green-600 text-center mb-4">
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+        <div className="max-w-md w-full bg-gray-800 p-8 rounded-lg shadow-md">
+          <div data-testid="success-message" className="text-green-400 text-center mb-4">
             {successMessage}
           </div>
-          <p className="text-center text-gray-600">Redirecionando para login...</p>
+          <p className="text-center text-gray-300">Redirecionando para login...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold text-center mb-6">Cadastro - LGPD Compliance</h1>
+    <div className="min-h-screen flex items-center justify-center bg-gray-900">
+      <div className="max-w-md w-full bg-gray-800 p-8 rounded-lg shadow-md">
+        <h1 className="text-2xl font-bold text-center mb-6 text-white">Cadastro - LGPD Compliance</h1>
         
         {errors.general && (
           <div data-testid="error-message" className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -130,8 +124,8 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email
+            <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
+              E-mail
             </label>
             <input
               data-testid="email-input"
@@ -140,7 +134,7 @@ export default function RegisterPage() {
               name="email"
               value={formData.email}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
             {errors.email && (
@@ -149,7 +143,7 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1">
               Senha
             </label>
             <input
@@ -159,7 +153,7 @@ export default function RegisterPage() {
               name="password"
               value={formData.password}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
             {errors.password && (
@@ -168,7 +162,7 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label htmlFor="userType" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="userType" className="block text-sm font-medium text-gray-300 mb-1">
               Tipo de Usuário
             </label>
             <select
@@ -177,7 +171,7 @@ export default function RegisterPage() {
               name="userType"
               value={formData.userType}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="data_subject">Titular de Dados</option>
               <option value="company_representative">Representante da Empresa</option>
@@ -195,7 +189,7 @@ export default function RegisterPage() {
         </form>
 
         <div className="mt-6 text-center">
-          <p className="text-gray-600">
+          <p className="text-gray-300">
             Já tem uma conta?{' '}
             <a href="/login" className="text-blue-600 hover:underline">
               Faça login

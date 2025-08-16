@@ -3,6 +3,7 @@
  */
 import { POST, GET } from './route';
 import { generateToken } from '@/lib/jwt';
+import { NextRequest } from 'next/server';
 
 // Mock NextRequest
 function createMockRequest(authHeader?: string) {
@@ -14,7 +15,7 @@ function createMockRequest(authHeader?: string) {
   return {
     headers,
     json: jest.fn(),
-  } as any;
+  } as Partial<NextRequest>;
 }
 
 describe('/api/auth/verify', () => {

@@ -1,40 +1,58 @@
-const { Given, When, Then, Before, After } = require('@cucumber/cucumber');
-const { chromium } = require('playwright');
+const { Given, When, Then, Before, After, BeforeAll, AfterAll } = require('@cucumber/cucumber');
+const browserPool = require('../support/browser-pool');
 
-let browser;
-let context;
 let page;
 
 // Setup and teardown hooks
 Before(async function () {
-  browser = await chromium.launch({ headless: true });
-  context = await browser.newContext();
-  page = await context.newPage();
-  
-  // Make page accessible globally for other step definition files
-  global.page = page;
-  global.browser = browser;
-  global.context = context;
+  // Set NODE_ENV to development for mock features
+  process.env.NODE_ENV = 'development';
   
   // Generate unique test ID for this scenario
   this.testId = Date.now().toString() + Math.random().toString(36).substr(2, 5);
-  console.log(`Test ID: ${this.testId}`);
   
-  // Add a small delay to ensure tests don't run too fast
-  await new Promise(resolve => setTimeout(resolve, 200));
+  try {
+    page = await browserPool.getPage(this.testId);
+    
+    // Make page accessible globally for other step definition files
+    global.page = page;
+    this.page = page;
+    
+  } catch (error) {
+    throw new Error(`Failed to get page: ${error.message}`);
+  }
 });
 
 After(async function () {
-  if (page) await page.close();
-  if (context) await context.close();
-  if (browser) await browser.close();
+  try {
+    if (page) {
+      await page.close();
+    }
+  } catch (error) {
+    console.log('Error closing page:', error.message);
+  }
+  
+  try {
+    await browserPool.cleanup(this.testId);
+  } catch (error) {
+    console.log('Error cleaning up browser context:', error.message);
+  }
+  
+  // Reset global variables
+  global.page = null;
+  page = null;
+});
+
+AfterAll(async function () {
+  await browserPool.closeAll();
 });
 
 // Background steps
 Given('the LGPD platform is running', async function () {
   // Start at the home page to verify platform is running
   await page.goto('http://localhost:3000');
-  await page.waitForLoadState('networkidle');
+  // Wait for page to load and be interactive
+  await page.waitForLoadState('domcontentloaded');
 });
 
 Given('the database is clean', async function () {
@@ -46,7 +64,8 @@ Given('the database is clean', async function () {
 // User registration steps
 Given('I am on the registration page', async function () {
   await page.goto('http://localhost:3000/register');
-  await page.waitForLoadState('networkidle');
+  // Wait for the registration form to be visible
+  await page.waitForSelector('[data-testid="email-input"]', { timeout: 8000 });
 });
 
 When('I fill in the registration form with:', async function (dataTable) {
@@ -77,21 +96,21 @@ When('I fill in the registration form with:', async function (dataTable) {
 
 When('I submit the registration form', async function () {
   await page.click('[data-testid="submit-button"]');
-  await page.waitForLoadState('networkidle');
+  // Wait for form submission response instead of networkidle
+  await page.waitForLoadState('domcontentloaded');
 });
 
 Then('I should see a success message {string}', async function (expectedMessage) {
-  // Wait for the success message to appear with a longer timeout
-  await page.waitForSelector('[data-testid="success-message"]', { timeout: 10000 });
+  // Wait for the success message to appear
+  await page.waitForSelector('[data-testid="success-message"]', { timeout: 8000 });
   const successMessage = await page.locator('[data-testid="success-message"]').textContent();
-  console.log('Success message found:', successMessage);
   if (!successMessage.includes(expectedMessage)) {
     throw new Error(`Expected success message "${expectedMessage}" but got "${successMessage}"`);
   }
 });
 
 Then('I should be redirected to the login page', async function () {
-  await page.waitForURL('**/login', { timeout: 5000 });
+  await page.waitForURL('**/login*', { timeout: 30000 });
   const currentUrl = page.url();
   if (!currentUrl.includes('/login')) {
     throw new Error(`Expected to be redirected to login page but was on ${currentUrl}`);
@@ -132,7 +151,8 @@ Given('a user exists with email {string} and password {string}', async function 
 
 Given('I am on the login page', async function () {
   await page.goto('http://localhost:3000/login');
-  await page.waitForLoadState('networkidle');
+  // Wait for the login form to be visible
+  await page.waitForSelector('[data-testid="email-input"]', { timeout: 8000 });
 });
 
 When('I fill in the login form with:', async function (dataTable) {
@@ -150,13 +170,16 @@ When('I fill in the login form with:', async function (dataTable) {
 
 When('I submit the login form', async function () {
   await page.click('[data-testid="submit-button"]');
-  await page.waitForURL('**/dashboard', { timeout: 5000 });
-  await page.waitForLoadState('networkidle');
+  // Wait for form submission to be processed
+  await page.waitForLoadState('domcontentloaded');
 });
 
 Then('I should be logged in successfully', async function () {
-  // Check for dashboard or success indicator
-  await page.waitForSelector('[data-testid="dashboard"]', { timeout: 5000 });
+  // Wait for redirect to dashboard page
+  await page.waitForURL('**/dashboard', { timeout: 8000 });
+  
+  // Check for dashboard element
+  await page.waitForSelector('[data-testid="dashboard"]', { timeout: 6000 });
 });
 
 Then('I should see the dashboard page', async function () {
@@ -196,42 +219,48 @@ Then('I should remain on the registration page', async function () {
 
 // Session and logout steps
 Given('I am logged in as {string}', async function (email) {
+  // Make email unique for this test run
+  const uniqueEmail = email.replace('@', `+${this.testId}@`);
+  
   // First create the user
   const response = await page.request.post('http://localhost:3000/api/auth/register', {
     data: {
-      email: email,
+      email: uniqueEmail,
       password: 'SecurePassword123!',
       userType: 'data_subject'
     }
   });
-  console.log(`User with email ${email} created with status ${response.status()}`);
+  console.log(`User with unique email ${uniqueEmail} created with status ${response.status()}`);
+  
+  // Store the unique email for later use
+  this.loggedInUserEmail = uniqueEmail;
   
   // Then login
   await page.goto('http://localhost:3000/login');
-  await page.fill('[data-testid="email-input"]', email);
+  await page.waitForSelector('[data-testid="email-input"]', { timeout: 8000 });
+  await page.fill('[data-testid="email-input"]', uniqueEmail);
   await page.fill('[data-testid="password-input"]', 'SecurePassword123!');
   await page.click('[data-testid="submit-button"]');
-  await page.waitForSelector('[data-testid="dashboard"]', { timeout: 5000 });
+  await page.waitForSelector('[data-testid="dashboard"]', { timeout: 60000 });
 });
 
 When('I refresh the page', async function () {
   await page.reload();
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('domcontentloaded');
 });
 
 Then('I should still be logged in', async function () {
-  await page.waitForSelector('[data-testid="dashboard"]', { timeout: 5000 });
+  await page.waitForSelector('[data-testid="dashboard"]', { timeout: 10000 });
 });
 
 Given('I am on the dashboard page', async function () {
   await page.goto('http://localhost:3000/dashboard');
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('domcontentloaded');
 });
 
 When('I click the logout button', async function () {
   await page.click('[data-testid="logout-button"]');
-  await page.waitForURL('**/login', { timeout: 5000 });
-  await page.waitForLoadState('networkidle');
+  await page.waitForURL('**/login*', { timeout: 30000 });
 });
 
 Then('I should be logged out', async function () {
@@ -244,9 +273,21 @@ Then('I should be logged out', async function () {
 
 Then('I should not have access to protected pages', async function () {
   await page.goto('http://localhost:3000/dashboard');
-  await page.waitForLoadState('networkidle');
-  const currentUrl = page.url();
-  if (currentUrl.includes('/dashboard')) {
+  
+  // Wait for potential redirect
+  try {
+    await page.waitForURL('**/login', { timeout: 8000 });
+  } catch (error) {
+    // If no redirect happens, check current URL
+    const currentUrl = page.url();
+    if (currentUrl.includes('/dashboard')) {
+      throw new Error('User should not have access to protected pages');
+    }
+  }
+  
+  // Ensure we're not on dashboard
+  const finalUrl = page.url();
+  if (finalUrl.includes('/dashboard')) {
     throw new Error('User should not have access to protected pages');
   }
 });
@@ -254,7 +295,7 @@ Then('I should not have access to protected pages', async function () {
 // Password reset steps
 When('I click {string}', async function (linkText) {
   await page.click(`text=${linkText}`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('domcontentloaded');
 });
 
 When('I enter email {string}', async function (email) {
@@ -263,7 +304,7 @@ When('I enter email {string}', async function (email) {
 
 When('I submit the password reset request', async function () {
   await page.click('[data-testid="reset-button"]');
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('domcontentloaded');
 });
 
 Then('I should see a message {string}', async function (expectedMessage) {

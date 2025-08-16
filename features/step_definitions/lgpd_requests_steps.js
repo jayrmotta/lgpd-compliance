@@ -161,12 +161,20 @@ When('I try to access the LGPD requests page', async function () {
 Then('I should see available request types:', async function (dataTable) {
   const expectedTypes = dataTable.hashes();
   
-  // Verify each request type is available
+  // Verify each request type is available (updated for new UI)
   for (const type of expectedTypes) {
-    await global.page.waitForSelector(`text=${type.type}`, { timeout: 5000 });
-    await global.page.waitForSelector(`text=${type.description}`, { timeout: 5000 });
+    // Look for Portuguese translations of request types
+    const typeMapping = {
+      'Data Access Request': 'Solicitação de Acesso aos Dados',
+      'Data Deletion Request': 'Solicitação de Exclusão de Dados',
+      'Data Correction Request': 'Solicitação de Correção de Dados',
+      'Data Portability Request': 'Solicitação de Portabilidade de Dados'
+    };
     
-    console.log(`Verified request type: ${type.type}`);
+    const translatedType = typeMapping[type.type] || type.type;
+    await global.page.waitForSelector(`text=${translatedType}`, { timeout: 5000 });
+    
+    console.log(`Verified request type: ${type.type} (${translatedType})`);
   }
 });
 

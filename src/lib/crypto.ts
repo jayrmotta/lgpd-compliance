@@ -162,25 +162,32 @@ export function getKeyFingerprint(publicKey: string): string {
 }
 
 /**
- * For demo purposes - hardcoded company keys
- * In production, these would be generated and stored securely
+ * Demo company public key - private key is managed client-side only
+ * In production, companies generate keys offline and register public key
  */
-export const DEMO_COMPANY_KEYS = {
-  publicKey: '', // Will be populated on first call
-  secretKey: ''  // Will be populated on first call
+export const DEMO_COMPANY_PUBLIC_KEY = {
+  key: '', // Will be set from database or generated client-side
+  fingerprint: ''
 };
 
 /**
- * Initialize demo company keys for testing/demo
+ * Initialize demo company public key (server-side safe)
+ * Private key is never generated or stored on server
  */
-export async function initializeDemoKeys(): Promise<void> {
-  if (!DEMO_COMPANY_KEYS.publicKey) {
+export async function getOrGenerateDemoPublicKey(): Promise<string> {
+  if (!DEMO_COMPANY_PUBLIC_KEY.key) {
+    // In production, this would come from company registration
+    // For demo, generate a consistent key pair client-side and register public key
     const keys = await generateKeyPair();
-    DEMO_COMPANY_KEYS.publicKey = keys.publicKey;
-    DEMO_COMPANY_KEYS.secretKey = keys.secretKey;
-    console.log('Demo company keys initialized:', {
-      publicKey: getKeyFingerprint(keys.publicKey),
-      fingerprint: getKeyFingerprint(keys.publicKey)
+    DEMO_COMPANY_PUBLIC_KEY.key = keys.publicKey;
+    DEMO_COMPANY_PUBLIC_KEY.fingerprint = getKeyFingerprint(keys.publicKey);
+    
+    console.log('Demo company public key generated:', {
+      fingerprint: DEMO_COMPANY_PUBLIC_KEY.fingerprint,
+      note: 'Private key must be generated and managed client-side'
     });
+    
+    return keys.publicKey;
   }
+  return DEMO_COMPANY_PUBLIC_KEY.key;
 }

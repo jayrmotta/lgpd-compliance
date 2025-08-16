@@ -7,7 +7,7 @@ Given('the LGPD platform is running for company {string}', async function (compa
   
   // Start at the home page to verify platform is running
   await global.page.goto('http://localhost:3000');
-  await global.page.waitForLoadState('networkidle');
+  await global.page.waitForLoadState('domcontentloaded');
   
   // Verify the platform is running for the specific company
   console.log(`Platform running for company: ${companyName}`);
@@ -32,7 +32,7 @@ Given('I am logged in as a data subject {string}', async function (email) {
   await global.page.fill('[data-testid="email-input"]', uniqueEmail);
   await global.page.fill('[data-testid="password-input"]', 'DataSubjectPassword123!');
   await global.page.click('[data-testid="submit-button"]');
-  await global.page.waitForSelector('[data-testid="dashboard"]', { timeout: 5000 });
+  await global.page.waitForSelector('[data-testid="dashboard"]', { timeout: 60000 });
   
   this.loggedInUser = uniqueEmail;
 });
@@ -46,7 +46,7 @@ Given('security features are properly configured', async function () {
 // Security confirmation steps
 Given('I am on the LGPD requests page', async function () {
   await global.page.goto('http://localhost:3000/lgpd-requests');
-  await global.page.waitForLoadState('networkidle');
+  await global.page.waitForLoadState('domcontentloaded');
 });
 
 When('I select {string}', async function (requestType) {

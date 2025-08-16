@@ -18,3 +18,7 @@
 - Success responses include success codes like: `REGISTRATION_SUCCESS`, `LOGIN_SUCCESS`
 - Frontend maintains translation maps for each error/success code
 - The app will always run on 3000, you should never change code when we get a message of conflicting port, instead we find ways to free the correct port and then proceed
+- always stick to the scripts declared in the package.json
+- private keys will never be stored in the server side and will never cross over the 
+  network
+- the ui text should be mostly ptbr with exceptions to common terms known by most people

@@ -7,8 +7,8 @@ import {
   generateNonce,
   hashData,
   getKeyFingerprint,
-  initializeDemoKeys,
-  DEMO_COMPANY_KEYS
+  getOrGenerateDemoPublicKey,
+  DEMO_COMPANY_PUBLIC_KEY
 } from './crypto';
 
 describe('Crypto Utils', () => {
@@ -169,32 +169,33 @@ describe('Crypto Utils', () => {
     });
   });
 
-  describe('demo keys', () => {
-    it('should initialize demo keys', async () => {
-      await initializeDemoKeys();
+  describe('demo public key management', () => {
+    it('should generate demo public key', async () => {
+      const publicKey = await getOrGenerateDemoPublicKey();
       
-      expect(DEMO_COMPANY_KEYS.publicKey).toBeDefined();
-      expect(DEMO_COMPANY_KEYS.secretKey).toBeDefined();
-      expect(DEMO_COMPANY_KEYS.publicKey.length).toBeGreaterThan(0);
-      expect(DEMO_COMPANY_KEYS.secretKey.length).toBeGreaterThan(0);
+      expect(publicKey).toBeDefined();
+      expect(typeof publicKey).toBe('string');
+      expect(publicKey.length).toBeGreaterThan(0);
+      expect(DEMO_COMPANY_PUBLIC_KEY.key).toBe(publicKey);
+      expect(DEMO_COMPANY_PUBLIC_KEY.fingerprint).toBeDefined();
     });
 
-    it('should not reinitialize keys on subsequent calls', async () => {
-      await initializeDemoKeys();
-      const originalPublicKey = DEMO_COMPANY_KEYS.publicKey;
+    it('should return same public key on subsequent calls', async () => {
+      const publicKey1 = await getOrGenerateDemoPublicKey();
+      const publicKey2 = await getOrGenerateDemoPublicKey();
       
-      await initializeDemoKeys();
-      
-      expect(DEMO_COMPANY_KEYS.publicKey).toBe(originalPublicKey);
+      expect(publicKey1).toBe(publicKey2);
     });
   });
 
-  describe('integration test - complete LGPD flow', () => {
-    it('should simulate data subject encrypting request for company', async () => {
-      // Initialize company keys
-      await initializeDemoKeys();
+  describe('integration test - client-side company flow', () => {
+    it('should demonstrate secure encryption flow', async () => {
+      // Get company public key (server-side safe)
+      const companyPublicKey = await getOrGenerateDemoPublicKey();
       
-      // Data subject encrypts their LGPD request
+      // Note: In production, company saves private key in password manager
+      
+      // Data subject encrypts their LGPD request using company's public key
       const lgpdRequest = JSON.stringify({
         type: 'DATA_ACCESS',
         reason: 'I want to see my personal data',
@@ -203,16 +204,17 @@ describe('Crypto Utils', () => {
         timestamp: new Date().toISOString()
       });
       
-      const encrypted = await encryptSealedBox(
-        lgpdRequest,
-        DEMO_COMPANY_KEYS.publicKey
-      );
       
-      // Company receives and decrypts the request
+      // Company decrypts using their private key (client-side only)
+      // Note: This requires the company's actual private key matching the public key
+      // For this test, we'll use a matching key pair
+      const testKeys = await generateKeyPair();
+      const testEncrypted = await encryptSealedBox(lgpdRequest, testKeys.publicKey);
+      
       const decrypted = await decryptSealedBox(
-        encrypted,
-        DEMO_COMPANY_KEYS.publicKey,
-        DEMO_COMPANY_KEYS.secretKey
+        testEncrypted,
+        testKeys.publicKey,
+        testKeys.secretKey
       );
       
       const decryptedRequest = JSON.parse(decrypted);

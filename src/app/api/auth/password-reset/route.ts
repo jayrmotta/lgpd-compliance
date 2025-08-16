@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     let body: PasswordResetRequest;
     try {
       body = await request.json();
-    } catch (parseError) {
+    } catch {
       return NextResponse.json(
         { code: 'VALIDATION_INVALID_JSON' } as APIResponse,
         { status: 400 }

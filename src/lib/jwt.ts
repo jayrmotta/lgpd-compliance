@@ -55,7 +55,7 @@ export function refreshToken(currentToken: string): string | null {
   
   // Add a small delay to ensure the new token has a different issued time
   // Remove JWT-specific fields and generate new token
-  const { iat, exp, ...userPayload } = payload;
+  const { iat: _iat, exp: _exp, ...userPayload } = payload;
   
   // In production, you might want to add additional validation here
   // like checking if the token is close to expiry, etc.

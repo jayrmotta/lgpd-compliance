@@ -58,6 +58,9 @@ Thumbs.db
 *.sqlite
 *.sqlite3
 
+# Development user storage
+.dev-users.json
+
 # Reports
 /reports/
 cucumber_report.html

@@ -34,16 +34,12 @@ const validateEmail = (email: string): boolean => {
   return emailRegex.test(email);
 };
 
-const generateUserId = (): string => {
-  return 'user_' + Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9);
-};
-
 export async function POST(request: NextRequest) {
   try {
     let body: RegisterRequest;
     try {
       body = await request.json();
-    } catch (parseError) {
+    } catch {
       return NextResponse.json(
         { code: 'VALIDATION_INVALID_JSON' } as APIResponse,
         { status: 400 }
@@ -85,7 +81,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists
-    const existingUser = findUserByEmail(email);
+    const existingUser = await findUserByEmail(email);
     
     if (existingUser) {
       // Security-safe response: Don't reveal if email exists
@@ -101,14 +97,12 @@ export async function POST(request: NextRequest) {
 
     // Create new user
     const newUser = {
-      id: generateUserId(),
       email: email.toLowerCase(),
       passwordHash,
-      userType,
-      createdAt: new Date()
+      userType
     };
 
-    addUser(newUser);
+    await addUser(newUser);
 
     return NextResponse.json(
       { code: 'REGISTRATION_SUCCESS' } as APIResponse,

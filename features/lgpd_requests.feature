@@ -1,6 +1,6 @@
 Feature: LGPD Request Submission
   As a data subject
-  I want to submit LGPD requests with PIX authentication
+  I want to submit LGPD requests with identity verification
   So that I can exercise my privacy rights with the company operating this platform
 
   Background:
@@ -15,10 +15,10 @@ Feature: LGPD Request Submission
       | reason      | I want to see what personal data you have |
       | description | Please provide all my personal information |
     And I click "Enviar Solicitação"
-    Then I should see a PIX QR code for "R$ 0.01"
-    And I should see instructions "Pague R$ 0,01 para verificar sua identidade"
-    When I complete the PIX payment with CPF "123.456.789-00"
-    Then I should see "Pagamento verificado com sucesso"
+    Then I should see identity verification section
+    And I should see instructions "Insira seu CPF para verificar sua identidade"
+    When I enter CPF "123.456.789-00" and verify identity
+    Then I should see "Identidade verificada com sucesso"
     And I should see "Sua solicitação foi enviada com segurança"
     And my request should appear in "My Requests" with status "Pending"
 
@@ -30,9 +30,9 @@ Feature: LGPD Request Submission
       | reason      | I no longer want to use the service |
       | description | Please delete all my data completely |
     And I click "Enviar Solicitação"
-    Then I should see a PIX QR code for "R$ 0.01"
-    When I complete the PIX payment with CPF "123.456.789-00"
-    Then I should see "Pagamento verificado com sucesso"
+    Then I should see identity verification section
+    When I enter CPF "123.456.789-00" and verify identity
+    Then I should see "Identidade verificada com sucesso"
     And I should see "Sua solicitação de exclusão foi enviada com segurança"
     And my request should appear in "My Requests" with status "Pending"
 
@@ -44,24 +44,16 @@ Feature: LGPD Request Submission
       | reason      | My address information is incorrect     |
       | description | Please update my address to: New Street, 123 |
     And I click "Enviar Solicitação"
-    Then I should see a PIX QR code for "R$ 0.01"
-    When I complete the PIX payment with CPF "123.456.789-00"
-    Then I should see "Pagamento verificado com sucesso"
+    Then I should see identity verification section
+    When I enter CPF "123.456.789-00" and verify identity
+    Then I should see "Identidade verificada com sucesso"
     And I should see "Sua solicitação de correção foi enviada com segurança"
     And my request should appear in "My Requests" with status "Pending"
 
-  Scenario: PIX payment timeout
+  Scenario: Identity verification with wrong CPF
     Given I am submitting a data access request
-    And I have reached the PIX payment step
-    When I do not complete the payment within 15 minutes
-    Then I should see "Payment verification timed out"
-    And I should see "Please start a new request"
-    And the request should not be submitted
-
-  Scenario: PIX payment with wrong CPF
-    Given I am submitting a data access request
-    And I have reached the PIX payment step
-    When I complete the PIX payment with CPF "000.000.000-00"
+    And I have reached the identity verification step
+    When I enter CPF "000.000.000-00" and verify identity
     Then I should see "CPF verification failed"
     And I should see "Please ensure you're using the same CPF associated with your account"
     And the request should not be submitted
@@ -94,19 +86,19 @@ Feature: LGPD Request Submission
       | Data Correction Request | Correct inaccurate personal data      |
       | Data Portability Request| Export your data in a portable format |
 
-  Scenario: Mock PIX payment for development
+  Scenario: Mock identity verification for development
     Given the system is in development mode
     And I am submitting a data access request
-    When I reach the PIX payment step
-    Then I should see a "Mock Payment" button
-    When I click "Mock Payment"
+    When I reach the identity verification step
+    Then I should see a "Mock Verification" button
+    When I click "Mock Verification"
     And I enter CPF "123.456.789-00"
-    Then I should see "Mock payment verified successfully"
+    Then I should see "Mock verification successful"
     And my request should be submitted normally
 
   Scenario: Request confirmation shows encryption notice
     Given I have filled out a data access request
-    And I have completed PIX verification
+    And I have completed identity verification
     When my request is being submitted
     Then I should see "Your request is being encrypted before submission"
     And I should see "The company will only see encrypted data until they process your request"

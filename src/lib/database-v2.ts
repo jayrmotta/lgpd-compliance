@@ -37,14 +37,22 @@ export interface Company {
   is_active: boolean;
 }
 
+export interface User {
+  id: string;
+  email: string;
+  passwordHash: string;
+  userType: 'data_subject' | 'company_representative';
+  createdAt: Date;
+}
+
 /**
  * Database connection manager
  */
 export class DatabaseManager {
   private db: sqlite3.Database | null = null;
-  private dbRun: ((sql: string, params?: any[]) => Promise<sqlite3.RunResult>) | null = null;
-  private dbGet: ((sql: string, params?: any[]) => Promise<any>) | null = null;
-  private dbAll: ((sql: string, params?: any[]) => Promise<any[]>) | null = null;
+  private dbRun: ((sql: string, params?: unknown[]) => Promise<sqlite3.RunResult>) | null = null;
+  private dbGet: ((sql: string, params?: unknown[]) => Promise<unknown>) | null = null;
+  private dbAll: ((sql: string, params?: unknown[]) => Promise<unknown[]>) | null = null;
 
   async initialize(): Promise<void> {
     if (this.db) {
@@ -67,6 +75,17 @@ export class DatabaseManager {
     if (!this.dbRun) throw new Error('Database not initialized');
 
     try {
+      // Users table
+      await this.dbRun(`
+        CREATE TABLE IF NOT EXISTS users (
+          id TEXT PRIMARY KEY,
+          email TEXT UNIQUE NOT NULL,
+          password_hash TEXT NOT NULL,
+          user_type TEXT NOT NULL CHECK(user_type IN ('data_subject', 'company_representative')),
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
       // Companies table
       await this.dbRun(`
         CREATE TABLE IF NOT EXISTS companies (
@@ -110,6 +129,7 @@ export class DatabaseManager {
       `);
 
       // Indexes for performance
+      await this.dbRun('CREATE INDEX IF NOT EXISTS idx_users_email ON users (email)');
       await this.dbRun('CREATE INDEX IF NOT EXISTS idx_requests_user_id ON lgpd_requests (user_id)');
       await this.dbRun('CREATE INDEX IF NOT EXISTS idx_requests_company_id ON lgpd_requests (company_id)');
       await this.dbRun('CREATE INDEX IF NOT EXISTS idx_requests_status ON lgpd_requests (status)');
@@ -230,17 +250,98 @@ export class DatabaseManager {
     }
   }
 
-  async createDemoCompany(): Promise<string> {
+  async createUser(user: Omit<User, 'id' | 'createdAt'>): Promise<string> {
     if (!this.dbRun) throw new Error('Database not initialized');
+
+    const id = `USER-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const createdAt = new Date();
+
+    await this.dbRun(`
+      INSERT INTO users (id, email, password_hash, user_type, created_at)
+      VALUES (?, ?, ?, ?, ?)
+    `, [id, user.email, user.passwordHash, user.userType, createdAt.toISOString()]);
+
+    return id;
+  }
+
+  async findUserByEmail(email: string): Promise<User | null> {
+    if (!this.dbGet) throw new Error('Database not initialized');
+
+    const row = await this.dbGet(`
+      SELECT * FROM users WHERE email = ? COLLATE NOCASE
+    `, [email]);
+
+    if (!row) return null;
+
+    return {
+      id: row.id,
+      email: row.email,
+      passwordHash: row.password_hash,
+      userType: row.user_type,
+      createdAt: new Date(row.created_at)
+    };
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    if (!this.dbAll) throw new Error('Database not initialized');
+
+    const rows = await this.dbAll(`
+      SELECT * FROM users ORDER BY created_at DESC
+    `);
+
+    return rows.map(row => ({
+      id: row.id,
+      email: row.email,
+      passwordHash: row.password_hash,
+      userType: row.user_type,
+      createdAt: new Date(row.created_at)
+    }));
+  }
+
+  async clearAllUsers(): Promise<void> {
+    if (!this.dbRun) throw new Error('Database not initialized');
+    await this.dbRun('DELETE FROM users');
+  }
+
+  async getCompanyPublicKey(companyId: string): Promise<string> {
+    if (!this.dbGet) throw new Error('Database not initialized');
+
+    const company = await this.dbGet(`
+      SELECT public_key FROM companies WHERE id = ? AND is_active = 1
+    `, [companyId]);
+
+    if (!company) {
+      throw new Error('Company not found or inactive');
+    }
+
+    return company.public_key;
+  }
+
+  async createDemoCompany(): Promise<string> {
+    if (!this.dbRun || !this.dbGet) throw new Error('Database not initialized');
 
     const id = 'COMPANY-DEMO-TECHCORP';
     
     try {
+      // Check if company already exists with real keys
+      const existing = await this.dbGet(`
+        SELECT public_key FROM companies WHERE id = ?
+      `, [id]);
+
+      if (existing && existing.public_key !== 'DEMO_PUBLIC_KEY_TO_BE_REPLACED') {
+        return id; // Company already exists with real keys
+      }
+
+      // Get or generate public key (private key managed client-side only)
+      const { getOrGenerateDemoPublicKey } = await import('@/lib/crypto');
+      const publicKey = await getOrGenerateDemoPublicKey();
+      
       await this.dbRun(`
         INSERT OR REPLACE INTO companies (id, name, public_key, is_active)
         VALUES (?, ?, ?, ?)
-      `, [id, 'TechCorp Ltd', 'DEMO_PUBLIC_KEY_TO_BE_REPLACED', true]);
+      `, [id, 'TechCorp Ltd', publicKey, true]);
       
+      console.log('Demo company created with real encryption keys');
       return id;
     } catch (error) {
       console.error('Failed to create demo company:', error);
@@ -285,4 +386,11 @@ export const getEncryptedLGPDData = (requestId: string) => databaseManager.getEn
 export const updateRequestStatus = (requestId: string, status: LGPDRequestStatus, completedAt?: Date) =>
   databaseManager.updateRequestStatus(requestId, status, completedAt);
 export const createDemoCompany = () => databaseManager.createDemoCompany();
+export const getCompanyPublicKey = (companyId: string) => databaseManager.getCompanyPublicKey(companyId);
 export const closeDatabase = () => databaseManager.close();
+
+// User management functions
+export const createUser = (user: Omit<User, 'id' | 'createdAt'>) => databaseManager.createUser(user);
+export const findUserByEmail = (email: string) => databaseManager.findUserByEmail(email);
+export const getAllUsers = () => databaseManager.getAllUsers();
+export const clearAllUsers = () => databaseManager.clearAllUsers();
