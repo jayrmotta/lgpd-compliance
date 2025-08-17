@@ -116,99 +116,85 @@ Maria, operadora da plataforma LGPD, inicia a configuração do sistema executan
 npm run create-super-admin -- --email maria@lgpdplatform.com --password SecureAdmin123!
 ```
 
-O sistema cria sua conta com o mais alto nível de acesso (`ROLE_HIERARCHY.super_admin: 4` em `common.ts:26`). Agora ela pode fazer login no **painel administrativo** (`/admin/page.tsx:15`) e precisa configurar uma nova empresa na plataforma.
+O sistema cria sua conta com o mais alto nível de acesso. Agora ela pode fazer login no **painel administrativo** (`/admin`) e precisa configurar uma nova empresa na plataforma.
 
-Maria navega para a interface administrativa onde vê um aviso crítico: "Esta página é apenas para operadores da plataforma" (`admin/page.tsx:110`). Ela preenche o formulário de criação de representante da empresa para a TechCorp Ltd, inserindo:
+Maria navega para a interface administrativa onde vê um aviso crítico: "Esta página é apenas para operadores da plataforma". Ela preenche o formulário de criação de representante da empresa para a TechCorp Ltd, inserindo:
 - Email: admin@techcorp.com  
 - Senha: SecurePass123!
 - ID da Empresa: techcorp-ltd
 - Função: admin
 
-Quando ela clica em "Criar Representante da Empresa" (`admin/page.tsx:217`), o sistema chama `/api/admin/company-representatives` que valida seus privilégios de super admin e cria a conta do representante da empresa com função 'admin' (`database-v2.ts:44`).
+Quando ela clica em "Criar Representante da Empresa", o sistema chama `/api/admin/company-representatives` que valida seus privilégios de super admin e cria a conta do representante da empresa com função 'admin'.
 
 ### **Capítulo 2: Representante da Empresa Configura a Criptografia**
 
-João, o recém-criado administrador da TechCorp Ltd, recebe suas credenciais de login de forma segura. Ele visita a plataforma e faz login em `/login` usando o sistema de autenticação (`auth/login/route.ts:1`). Após login bem-sucedido, ele é direcionado para `/company-setup` (`company-setup/page.tsx:8`).
+João, o recém-criado administrador da TechCorp Ltd, recebe suas credenciais de login de forma segura. Ele visita a plataforma e faz login em `/login` usando o sistema de autenticação. Após login bem-sucedido, ele é direcionado para `/company-setup`.
 
-João vê um aviso crítico de segurança: "Chaves privadas são geradas em seu navegador e NUNCA enviadas aos nossos servidores" (`company-setup/page.tsx:117`). Ele clica em "Gerar Chaves de Criptografia" (`company-setup/page.tsx:145`), que aciona a função `generateKeyPair()` (`crypto.ts` - referenciado em `company-setup/page.tsx:19`).
+João vê um aviso crítico de segurança: "Chaves privadas são geradas em seu navegador e NUNCA enviadas aos nossos servidores". Ele clica em "Gerar Chaves de Criptografia", que aciona a função de geração de chaves.
 
-O sistema gera:
-- Uma chave pública (para receber solicitações LGPD criptografadas)
-- Uma chave privada (para descriptografar solicitações - nunca sai de seu navegador)
-- Uma impressão digital da chave para identificação (`company-setup/page.tsx:169`)
+O sistema gera um par de chaves de criptografia:
+- Chave pública (para receber solicitações LGPD criptografadas)
+- Chave privada (para descriptografar solicitações - permanece no navegador)
 
-João cuidadosamente copia sua chave privada para seu gerenciador de senhas, baixa o arquivo de backup das chaves (`company-setup/page.tsx:54`), marca "Salvei minha chave privada com segurança" (`company-setup/page.tsx:252`), e clica em "Registrar Chave Pública e Continuar" (`company-setup/page.tsx:262`). O sistema registra a chave pública de sua empresa no banco de dados (`database-v2.ts:344`).
+João salva sua chave privada no gerenciador de senhas, baixa o backup e confirma que salvou com segurança. O sistema registra a chave pública da empresa no banco de dados.
 
 ### **Capítulo 3: Titular de Dados Descobre Seus Direitos**
 
-Ana, uma cidadã comum, visita a página inicial da plataforma (`page.tsx:6`) e lê sobre conformidade LGPD. Ela aprende sobre seus direitos através dos cartões de funcionalidades (`page.tsx:183`):
+Ana, uma cidadã comum, visita a página inicial da plataforma (`/`) e lê sobre conformidade LGPD. Ela aprende sobre seus direitos através dos cartões de funcionalidades:
 - 📝 Acesso a Dados ("Visualize todos os dados pessoais armazenados")
 - 🗑️ Exclusão de Dados ("Solicite a remoção completa dos seus dados")  
 - ✏️ Correção de Dados ("Atualize informações incorretas")
 - 📤 Portabilidade de Dados ("Exporte seus dados em formato portável")
 
-Impressionada com a abordagem de segurança primeiro descrita, Ana clica em "Criar Conta" (`page.tsx:44`).
+Impressionada com a abordagem de segurança primeiro descrita, Ana clica em "Criar Conta".
 
 ### **Capítulo 4: Registro do Titular de Dados**
 
-Ana preenche o formulário de registro em `/register` com seu email e uma senha forte. O sistema valida que sua senha atende aos requisitos: 8+ caracteres, maiúscula, minúscula e caracteres especiais (`auth/register/route.ts:16-30`).
+Ana preenche o formulário de registro em `/register` com seu email e uma senha forte. O sistema valida que sua senha atende aos requisitos: 8+ caracteres, maiúscula, minúscula e caracteres especiais.
 
-Quando ela submete, o endpoint da API `/api/auth/register` (`auth/register/route.ts:37`) processa sua solicitação:
-1. Valida formato do email (`auth/register/route.ts:32`)
-2. Faz hash de sua senha com bcrypt (`auth/register/route.ts:105`)
-3. Cria sua conta com função 'data_subject' (`auth/register/route.ts:111`)
-4. Retorna código de sucesso 'REGISTRATION_SUCCESS' (`auth/register/route.ts:117`)
+Quando ela submete, o endpoint da API `/api/auth/register` processa sua solicitação:
+1. Valida formato do email
+2. Faz hash de sua senha com bcrypt
+3. Cria sua conta com função 'data_subject'
+4. Retorna código de sucesso 'REGISTRATION_SUCCESS'
 
 ### **Capítulo 5: Login e Acesso ao Dashboard do Titular de Dados**
 
-Ana faz login em `/login` usando suas credenciais. O sistema verifica sua senha, gera um token JWT (`jwt.ts` - referenciado no login), e a redireciona para `/dashboard` (`dashboard/page.tsx:6`).
+Ana faz login em `/login` usando suas credenciais. O sistema verifica sua senha, gera um token JWT, e a redireciona para `/dashboard`.
 
-Em seu dashboard, Ana vê uma mensagem de boas-vindas e três opções principais (`dashboard/page.tsx:96-134`):
+Em seu dashboard, Ana vê uma mensagem de boas-vindas e três opções principais:
 - "Solicitar Dados" (acesso a dados)
 - "Excluir Dados" (exclusão de dados)  
 - "Corrigir Dados" (correção de dados)
 
 ### **Capítulo 6: Criando uma Solicitação LGPD**
 
-Ana clica em "Solicitar Dados" que a leva para `/lgpd-requests?type=data_access` (`dashboard/page.tsx:99`). O sistema primeiro realiza uma verificação de compatibilidade do navegador (`lgpd-requests/page.tsx:49`) e mostra ✅ "Seu navegador é compatível" (`lgpd-requests/page.tsx:257`).
+Ana clica em "Solicitar Dados" que a leva para `/lgpd-requests?type=data_access`. O sistema primeiro realiza uma verificação de compatibilidade do navegador e mostra ✅ "Seu navegador é compatível".
 
-Ana preenche sua solicitação (`lgpd-requests/page.tsx:307-332`):
+Ana preenche sua solicitação:
 - **Motivo**: "Quero verificar meus dados pessoais" 
 - **Descrição**: "Por favor, forneça todos os meus dados pessoais incluindo nome completo, endereço e dados comportamentais coletados sobre mim"
 
-Quando ela clica em "Enviar Solicitação" (`lgpd-requests/page.tsx:347`), o sistema mostra uma mensagem de processamento de segurança: "Sua solicitação está sendo protegida" (`lgpd-requests/page.tsx:264`).
+Quando ela clica em "Enviar Solicitação", o sistema mostra uma mensagem de processamento de segurança: "Sua solicitação está sendo protegida".
 
 ### **Capítulo 7: Verificação de Identidade**
 
-O sistema agora requer verificação de identidade (`lgpd-requests/page.tsx:369`). Ana vê o formulário de verificação onde insere seu CPF: "123.456.789-00" (`lgpd-requests/page.tsx:396`).
+O sistema agora requer verificação de identidade. Ana vê o formulário de verificação onde insere seu CPF: "123.456.789-00".
 
-Ela clica em "Verificar Identidade" (`lgpd-requests/page.tsx:415`), que valida o formato do CPF (`lgpd-requests/page.tsx:153-160`) e define `identityVerified = true`.
+Ela clica em "Verificar Identidade", que valida o formato do CPF e define que a identidade foi verificada.
 
 ### **Capítulo 8: Submissão da Solicitação Criptografada**
 
-Com a identidade verificada, Ana vê a tela de confirmação final (`lgpd-requests/page.tsx:431`) mostrando "Identidade verificada com sucesso" e "Sua solicitação está sendo criptografada antes do envio" (`lgpd-requests/page.tsx:441`).
+Com a identidade verificada, Ana vê a tela de confirmação final mostrando "Identidade verificada com sucesso" e "Sua solicitação está sendo criptografada antes do envio".
 
-Ela clica em "Finalizar Solicitação" (`lgpd-requests/page.tsx:454`), que aciona o processo crítico de criptografia em `/api/lgpd-requests` (`lgpd-requests/route.ts:55`):
+Ela clica em "Finalizar Solicitação", acionando o processo de criptografia em `/api/lgpd-requests`. O sistema:
 
-1. **Verificação de Autenticação**: Verifica o token JWT de Ana (`lgpd-requests/route.ts:58-74`)
-2. **Validação de Dados**: Valida tipo de solicitação, motivo, descrição e CPF (`lgpd-requests/route.ts:88-112`)
-3. **Configuração da Empresa**: Garante que a chave pública da TechCorp existe (`lgpd-requests/route.ts:118`)
-4. **Criação de Metadados**: Cria registro de solicitação apenas com CPF hasheado (`lgpd-requests/route.ts:142-157`)
-5. **Criptografia**: Os dados sensíveis de Ana são criptografados usando criptografia sealed box (`lgpd-requests/route.ts:161-181`):
-   ```javascript
-   const sensitiveData = {
-     reason: "Quero verificar meus dados pessoais",
-     description: "Por favor, forneça todos os meus dados...",
-     cpf: "123.456.789-00",
-     type: "ACCESS",
-     userEmail: "ana@email.com",
-     timestamp: "2025-08-17T...",
-     requestId: "REQ-1755288038734-b9kyt20gt"
-   }
-   ```
-6. **Armazenamento**: Blob criptografado armazenado no banco de dados (`lgpd-requests/route.ts:177-181`)
+1. Verifica autenticação e valida os dados
+2. Busca a chave pública da TechCorp
+3. Criptografa os dados sensíveis usando criptografia sealed box
+4. Armazena apenas metadados e o blob criptografado no banco de dados
 
-O sistema responde com sucesso e confirmação de criptografia (`lgpd-requests/route.ts:183-193`):
+O sistema responde com sucesso e confirmação de criptografia:
 ```
 ✅ Solicitação LGPD criada com sucesso!
 🔒 DADOS CRIPTOGRAFADOS COM SEGURANÇA
@@ -219,17 +205,17 @@ O sistema responde com sucesso e confirmação de criptografia (`lgpd-requests/r
 
 ### **Capítulo 9: Empresa Processa a Solicitação**
 
-João da TechCorp recebe uma notificação sobre a nova solicitação LGPD. Ele faz login em `/company-dashboard` (`company-dashboard/page.tsx:27`) mas primeiro deve desbloquear o dashboard com sua chave privada.
+João da TechCorp recebe uma notificação sobre a nova solicitação LGPD. Ele faz login em `/company-dashboard` mas primeiro deve desbloquear o dashboard com sua chave privada.
 
-João insere sua chave privada de seu gerenciador de senhas (`company-dashboard/page.tsx:214-218`). O sistema valida o formato da chave (`company-dashboard/page.tsx:79`) e desbloqueia o dashboard, mostrando "Dashboard Desbloqueado" (`company-dashboard/page.tsx:252`).
+João insere sua chave privada de seu gerenciador de senhas. O sistema valida o formato da chave e desbloqueia o dashboard, mostrando "Dashboard Desbloqueado".
 
-O dashboard exibe a solicitação de Ana (`company-dashboard/page.tsx:277`):
+O dashboard exibe a solicitação de Ana:
 - **Tipo de Solicitação**: "Acesso aos Dados - REQ-1755288038734-b9kyt20gt"
 - **Status**: "PENDING" 
 - **Criada**: "15/08/2025 às 20:00"
-- **Prazo**: "30/08/2025 às 20:00" (15 dias, conforme `database-v2.ts:152`)
+- **Prazo**: "30/08/2025 às 20:00" (15 dias)
 
-João clica na solicitação para descriptografá-la. O sistema usa sua chave privada para descriptografar o sealed box (`company-dashboard/page.tsx:99-125`), revelando os dados originais de Ana:
+João clica na solicitação para descriptografá-la. O sistema usa sua chave privada para descriptografar o sealed box, revelando os dados originais de Ana:
 - **Email**: ana@email.com
 - **CPF**: 123.456.789-00
 - **Motivo**: "Quero verificar meus dados pessoais"  
@@ -237,12 +223,12 @@ João clica na solicitação para descriptografá-la. O sistema usa sua chave pr
 
 ### **Capítulo 10: Processamento e Resposta da Solicitação**
 
-João revisa a solicitação descriptografada de Ana e clica em "Processar Solicitação" (`company-dashboard/page.tsx:324`). Ele coleta os dados de Ana dos sistemas da TechCorp:
+João revisa a solicitação descriptografada de Ana e clica em "Processar Solicitação". Ele coleta os dados de Ana dos sistemas da TechCorp:
 - Dados de perfil (nome, email, endereço)
 - Dados comportamentais (histórico de compras, preferências)
 - Dados técnicos (endereços IP, informações do dispositivo)
 
-João compila uma resposta abrangente e clica em "Marcar como Concluída" (`company-dashboard/page.tsx:328`). O sistema atualiza o status da solicitação para 'COMPLETED' com timestamp de conclusão (`database-v2.ts:260-272`).
+João compila uma resposta abrangente e clica em "Marcar como Concluída". O sistema atualiza o status da solicitação para 'COMPLETED' com timestamp de conclusão.
 
 ### **Capítulo 11: Titular de Dados Recebe Resposta**
 
@@ -250,32 +236,27 @@ Ana faz login novamente na plataforma e visita `/my-requests` para verificar o s
 
 A TechCorp envia a Ana sua exportação completa de dados através de um canal seguro (separado da plataforma), cumprindo sua solicitação de acesso LGPD dentro do prazo obrigatório de 15 dias.
 
-### **Capítulo 12: Conformidade Contínua**
+### **Capítulo 12: Conformidade Alcançada**
 
-O sistema mantém uma trilha de auditoria de todas as ações:
-- Metadados da solicitação de Ana (com dados sensíveis criptografados)
-- Timestamps de processamento e mudanças de status
-- Rastreamento de conformidade de resposta da empresa
-- Prova de conhecimento zero de que o operador da plataforma nunca viu os dados pessoais de Ana
+O sistema mantém trilha de auditoria completa com metadados e timestamps, garantindo conformidade LGPD:
 
-Todas as partes cumpriram suas obrigações LGPD:
 - **Ana** exerceu seu direito de acesso a dados
 - **TechCorp** respondeu dentro dos prazos legais  
-- **Plataforma** facilitou transferência de dados segura e conforme
-- **Super Admin** mantém integridade do sistema sem acessar dados pessoais
+- **Plataforma** facilitou transferência segura com conhecimento zero
+- **Super Admin** manteve integridade sem acessar dados pessoais
 
-Isso demonstra o fluxo completo ponta a ponta de conformidade LGPD onde dados pessoais sensíveis permanecem criptografados e acessíveis apenas aos representantes apropriados da empresa, enquanto o operador da plataforma mantém conhecimento zero do conteúdo real dos dados pessoais.
+Isso demonstra o fluxo completo de conformidade LGPD com criptografia ponta a ponta, onde dados sensíveis permanecem acessíveis apenas aos representantes da empresa.
 
 ## 🧪 Estratégia de Testes
 
 ### Testes Unitários (Jest)
-- **69 testes** cobrindo lógica de negócio principal
+- Cobrindo lógica de negócio principal
 - **Rotas de API**, **autenticação**, **criptografia**, **operações de banco de dados**
 - Executar com: `npm test`
 - Relatórios de cobertura em `/coverage/`
 
 ### Testes BDD (Cucumber + Playwright)
-- **26 cenários** cobrindo jornadas do usuário
+- Cobrindo jornadas do usuário
 - **Fluxos de autenticação**, **fluxos de trabalho de solicitação LGPD**, **pagamentos PIX**
 - Executar com: `npm run test:cucumber`
 - Requer servidor de desenvolvimento rodando na porta 3000
@@ -295,7 +276,13 @@ Testes Unitários (Jest)
 src/
 ├── app/                    # Next.js App Router
 │   ├── api/auth/          # Rotas de API de autenticação
+│   ├── api/lgpd-requests/ # API de solicitações LGPD
+│   ├── api/admin/         # API administrativa
+│   ├── api/pix/           # API de pagamento PIX
 │   ├── dashboard/         # Página do dashboard do usuário
+│   ├── company-dashboard/ # Dashboard da empresa
+│   ├── company-setup/     # Configuração de empresa
+│   ├── admin/             # Painel administrativo
 │   ├── login/             # Página de login
 │   ├── register/          # Página de registro  
 │   ├── lgpd-requests/     # Criação de solicitação LGPD
@@ -306,9 +293,14 @@ src/
 │   ├── crypto.ts          # Criptografia ponta a ponta
 │   ├── database-v2.ts     # Operações de banco de dados
 │   ├── jwt.ts             # Gerenciamento de tokens
-│   ├── pix-mock.ts        # Simulação de pagamento PIX
 │   ├── message-constants.ts # Mensagens de erro/sucesso
-│   └── auth-utils.ts      # Auxiliares de autenticação
+│   ├── identity-verification.ts # Verificação de identidade
+│   ├── auth-client.tsx    # Cliente de autenticação
+│   ├── auth-fetch.ts      # Utilitários de fetch autenticado
+│   └── user-storage.ts    # Armazenamento de usuário
+├── scripts/               # Scripts utilitários
+│   └── create-super-admin.ts # Criação de super admin
+└── types/                 # Definições de tipos TypeScript
 
 features/                  # Cenários BDD (Gherkin)
 ├── step_definitions/      # Implementações de passos Cucumber
@@ -319,8 +311,7 @@ features/                  # Cenários BDD (Gherkin)
     ├── timeout.js        # Configurações de timeout de teste
     └── browser-setup.js  # Configuração do Playwright
 
-tests/                    # Testes unitários (Jest)
-reports/                  # Cobertura de testes e relatórios
+coverage/                 # Relatórios de cobertura de testes
 ```
 
 ## Abordagem de Desenvolvimento
@@ -389,7 +380,6 @@ Para solução de problemas mais detalhada, veja [TESTING.md](./TESTING.md).
 2. **Cobertura de Testes**: Todo código deve ter testes passando
 3. **Padrões de Código**: Seguir convenções estabelecidas e regras de linting
 4. **Segurança Primeiro**: Abordagem zero-trust para todas as implementações
-5. **Documentação**: Atualizar docs para quaisquer mudanças arquiteturais
 
 ### Fluxo de Trabalho de Desenvolvimento
 ```bash
@@ -413,7 +403,6 @@ npm test && npm run test:cucumber
 
 - **[TESTING.md](./TESTING.md)** - Guia abrangente de testes
 - **[CLAUDE.md](./CLAUDE.md)** - Regras de desenvolvimento de IA específicas do projeto
-- **Documentação da API** - Disponível em `/api/docs` (quando rodando)
 
 ## 🔗 Recursos
 
