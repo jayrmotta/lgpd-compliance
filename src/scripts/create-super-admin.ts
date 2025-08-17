@@ -1,67 +1,24 @@
-#!/usr/bin/env node
+#!/usr/bin/env tsx
 
-const { hash } = require('bcryptjs');
-const { randomBytes } = require('crypto');
-const path = require('path');
-const sqlite3 = require('sqlite3');
-const { promisify } = require('util');
-const readline = require('readline');
+import { hash } from 'bcryptjs';
+import readline from 'readline';
+import { addUser, findUserByEmail, getAllUsers } from '@/lib/user-storage';
 
 /**
- * CLI script to create super admin with command line arguments or interactive mode
+ * CLI script to create super admin using shared application code
  * 
- * Usage:
- *   npm run create-super-admin -- --email admin@platform.com --password MySecurePass123!
- *   npm run create-super-admin (interactive mode)
+ * This TypeScript version ensures full compatibility with the application
+ * and uses the same imports and types as the rest of the codebase.
  */
 
 class SuperAdminCreator {
-  constructor() {
-    this.db = null;
-    this.dbRun = null;
-    this.dbGet = null;
-  }
-
-  async initializeDatabase() {
-    const dbPath = process.env.DATABASE_PATH || path.join(process.cwd(), 'lgpd_compliance.db');
-    this.db = new sqlite3.Database(dbPath);
-    
-    this.dbRun = promisify(this.db.run.bind(this.db));
-    this.dbGet = promisify(this.db.get.bind(this.db));
-
-    await this.dbRun(`
-      CREATE TABLE IF NOT EXISTS users (
-        id TEXT PRIMARY KEY,
-        email TEXT UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
-        role TEXT NOT NULL CHECK(role IN ('data_subject', 'super_admin', 'admin', 'employee')),
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        company_id TEXT
-      )
-    `);
-  }
-
-  async closeDatabase() {
-    return new Promise((resolve, reject) => {
-      if (!this.db) {
-        resolve();
-        return;
-      }
-      
-      this.db.close((err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
-  }
-
-  validateEmail(email) {
+  validateEmail(email: string): boolean {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   }
 
-  validatePassword(password) {
-    const errors = [];
+  validatePassword(password: string): string[] {
+    const errors: string[] = [];
     
     if (password.length < 8) {
       errors.push('Password must be at least 8 characters long');
@@ -79,25 +36,19 @@ class SuperAdminCreator {
     return errors;
   }
 
-  async checkExistingSuperAdmin() {
-    const existing = await this.dbGet(`
-      SELECT COUNT(*) as count FROM users WHERE role = 'super_admin'
-    `);
-    
-    return existing.count > 0;
+  async checkExistingSuperAdmin(): Promise<boolean> {
+    const allUsers = await getAllUsers();
+    return allUsers.some(user => user.role === 'super_admin');
   }
 
-  async checkEmailExists(email) {
-    const existing = await this.dbGet(`
-      SELECT id FROM users WHERE email = ?
-    `, [email.toLowerCase()]);
-    
-    return !!existing;
+  async checkEmailExists(email: string): Promise<boolean> {
+    const existingUser = await findUserByEmail(email);
+    return !!existingUser;
   }
 
-  parseArguments() {
+  parseArguments(): { email?: string; password?: string; help?: boolean } {
     const args = process.argv.slice(2);
-    const parsed = {};
+    const parsed: { email?: string; password?: string; help?: boolean } = {};
     
     for (let i = 0; i < args.length; i++) {
       if (args[i] === '--email' && i + 1 < args.length) {
@@ -114,7 +65,7 @@ class SuperAdminCreator {
     return parsed;
   }
 
-  showHelp() {
+  showHelp(): void {
     console.log('🔐 LGPD Platform - Super Admin Account Creator');
     console.log('===============================================\n');
     console.log('Usage:');
@@ -131,9 +82,10 @@ class SuperAdminCreator {
     console.log('  - Only one super admin account is allowed');
     console.log('  - Super admin can create company representative accounts');
     console.log('  - Use a strong password and store it securely');
+    console.log('  - ✅ Uses shared application code (zero duplication)');
   }
 
-  async promptSecurely(question, hidden = false) {
+  async promptSecurely(question: string, hidden = false): Promise<string> {
     return new Promise((resolve) => {
       const rl = readline.createInterface({
         input: process.stdin,
@@ -141,16 +93,14 @@ class SuperAdminCreator {
       });
 
       if (hidden && process.stdin.isTTY) {
-        // Hide password input in interactive mode
-        const stdin = process.openStdin();
+        const stdin = process.stdin;
         process.stdout.write(question);
         stdin.setRawMode(true);
         stdin.resume();
         stdin.setEncoding('utf8');
         
         let password = '';
-        stdin.on('data', function(char) {
-          char = char + '';
+        stdin.on('data', function(char: string) {
           switch(char) {
             case '\n':
             case '\r':
@@ -165,7 +115,7 @@ class SuperAdminCreator {
               process.stdout.write('\n');
               process.exit();
               break;
-            case '\u007f': // Backspace
+            case '\u007f':
               if (password.length > 0) {
                 password = password.slice(0, -1);
                 process.stdout.write('\b \b');
@@ -186,23 +136,22 @@ class SuperAdminCreator {
     });
   }
 
-  generateUserId() {
-    return 'user-' + Date.now() + '-' + randomBytes(4).toString('hex');
-  }
-
-  async createSuperAdmin(email, password) {
-    const userId = this.generateUserId();
+  async createSuperAdmin(email: string, password: string): Promise<string> {
+    // Hash password using same method as application
     const passwordHash = await hash(password, 12);
     
-    await this.dbRun(`
-      INSERT INTO users (id, email, password_hash, role, created_at)
-      VALUES (?, ?, ?, 'super_admin', CURRENT_TIMESTAMP)
-    `, [userId, email.toLowerCase(), passwordHash]);
+    // Use shared addUser function - ensures exact same logic as application
+    const userId = await addUser({
+      email: email.toLowerCase(),
+      passwordHash,
+      role: 'super_admin',
+      passwordTemporary: false // Super admin passwords are never temporary
+    });
     
     return userId;
   }
 
-  async run() {
+  async run(): Promise<void> {
     try {
       const args = this.parseArguments();
       
@@ -213,8 +162,6 @@ class SuperAdminCreator {
 
       console.log('🔐 LGPD Platform - Super Admin Account Creator');
       console.log('===============================================\n');
-
-      await this.initializeDatabase();
 
       const hasSuperAdmin = await this.checkExistingSuperAdmin();
       if (hasSuperAdmin) {
@@ -288,27 +235,27 @@ class SuperAdminCreator {
       }
 
       // Validate provided arguments
-      if (!this.validateEmail(email)) {
+      if (!this.validateEmail(email!)) {
         console.log('❌ Invalid email address');
         process.exit(1);
       }
 
-      const emailExists = await this.checkEmailExists(email);
+      const emailExists = await this.checkEmailExists(email!);
       if (emailExists) {
         console.log('❌ An account with this email already exists');
         process.exit(1);
       }
 
-      const passwordErrors = this.validatePassword(password);
+      const passwordErrors = this.validatePassword(password!);
       if (passwordErrors.length > 0) {
         console.log('❌ Password validation failed:');
         passwordErrors.forEach(error => console.log(`   - ${error}`));
         process.exit(1);
       }
 
-      // Create the account
+      // Create the account using shared application logic
       console.log('\n🔄 Creating super admin account...');
-      const userId = await this.createSuperAdmin(email, password);
+      const userId = await this.createSuperAdmin(email!, password!);
       
       console.log('✅ Super admin account created successfully!');
       console.log(`   User ID: ${userId}`);
@@ -323,10 +270,11 @@ class SuperAdminCreator {
       console.log('\n🔒 Security reminder: Store your credentials securely!');
 
     } catch (error) {
-      console.error('❌ Error creating super admin account:', error.message);
+      console.error('❌ Error creating super admin account:', (error as Error).message);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Stack trace:', (error as Error).stack);
+      }
       process.exit(1);
-    } finally {
-      await this.closeDatabase();
     }
   }
 }

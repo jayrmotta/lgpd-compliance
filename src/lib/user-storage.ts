@@ -1,7 +1,8 @@
 // SQLite-backed user storage - replaces in-memory storage
 
 import { 
-  createUser as dbCreateUser, 
+  createUser as dbCreateUser,
+  updateUser as dbUpdateUser,
   findUserByEmail as dbFindUserByEmail, 
   getAllUsers as dbGetAllUsers, 
   clearAllUsers as dbClearAllUsers,
@@ -35,6 +36,11 @@ export async function findUserByEmail(email: string): Promise<User | null> {
 export async function addUser(user: Omit<User, 'id' | 'createdAt'>): Promise<string> {
   await ensureDbInitialized();
   return await dbCreateUser(user);
+}
+
+export async function updateUser(user: User): Promise<void> {
+  await ensureDbInitialized();
+  return await dbUpdateUser(user);
 }
 
 export async function getAllUsers(): Promise<User[]> {

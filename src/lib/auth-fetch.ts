@@ -29,26 +29,3 @@ export async function authenticatedFetch(
   });
 }
 
-/**
- * Check if user has a valid token
- */
-export function hasAuthToken(): boolean {
-  const token = localStorage.getItem('authToken');
-  return !!token;
-}
-
-/**
- * Get the current auth token
- */
-export function getAuthToken(): string | null {
-  return localStorage.getItem('authToken');
-}
-
-/**
- * Clear all auth data
- */
-export function clearAuthData(): void {
-  localStorage.removeItem('isLoggedIn');
-  localStorage.removeItem('userEmail');
-  localStorage.removeItem('authToken');
-}

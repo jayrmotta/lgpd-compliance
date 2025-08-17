@@ -6,18 +6,18 @@ import { ERROR_MESSAGES } from '@/lib/message-constants';
 interface CreateCompanyRepForm {
   email: string;
   password: string;
-  confirmPassword: string;
   companyId: string;
   role: 'admin' | 'employee';
+  generatePassword: boolean;
 }
 
 export default function AdminPage() {
   const [form, setForm] = useState<CreateCompanyRepForm>({
     email: '',
     password: '',
-    confirmPassword: '',
     companyId: 'techcorp-ltd',
-    role: 'employee'
+    role: 'employee',
+    generatePassword: true // Default to auto-generate
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -28,8 +28,8 @@ export default function AdminPage() {
     setMessage(null);
 
     // Client-side validation
-    if (form.password !== form.confirmPassword) {
-      setMessage({ type: 'error', text: 'Senhas não coincidem' });
+    if (!form.generatePassword && !form.password) {
+      setMessage({ type: 'error', text: 'Forneça uma senha temporária ou marque "Gerar automaticamente"' });
       setLoading(false);
       return;
     }
@@ -43,22 +43,27 @@ export default function AdminPage() {
         },
         body: JSON.stringify({
           email: form.email,
-          password: form.password,
+          password: form.generatePassword ? undefined : form.password,
           companyId: form.companyId,
-          role: form.role
+          role: form.role,
+          generatePassword: form.generatePassword
         })
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        setMessage({ type: 'success', text: 'Representante da empresa criado com sucesso!' });
+        let successText = 'Representante da empresa criado com sucesso!';
+        if (data.data?.temporaryPassword) {
+          successText += `\n\nSenha temporária: ${data.data.temporaryPassword}\n\nENVIE esta senha de forma segura para o usuário. Eles DEVEM alterar esta senha no primeiro login.`;
+        }
+        setMessage({ type: 'success', text: successText });
         setForm({
           email: '',
           password: '',
-          confirmPassword: '',
           companyId: 'techcorp-ltd',
-          role: 'employee'
+          role: 'employee',
+          generatePassword: true
         });
       } else {
         const errorMessage = ERROR_MESSAGES[data.code] || data.code || 'Erro desconhecido';
@@ -136,35 +141,87 @@ export default function AdminPage() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Senha
-                  </label>
-                  <input
-                    type="password"
-                    name="password"
-                    value={form.password}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2"
-                    placeholder="Senha forte com pelo menos 8 caracteres"
-                  />
+                <div className="bg-blue-900/30 border border-blue-700 rounded-lg p-4 mb-4">
+                  <div className="flex items-center">
+                    <div className="text-blue-400 text-lg mr-2">🔐</div>
+                    <div>
+                      <h4 className="text-blue-300 font-medium">Senhas Temporárias</h4>
+                      <p className="text-blue-200 text-sm">
+                        Todas as senhas criadas por administradores são temporárias. 
+                        O usuário DEVE alterar a senha no primeiro login.
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Confirmar Senha
+                  <label className="flex items-center mb-4">
+                    <input
+                      type="radio"
+                      name="passwordType"
+                      checked={form.generatePassword}
+                      onChange={() => setForm(prev => ({ 
+                        ...prev, 
+                        generatePassword: true,
+                        password: ''
+                      }))}
+                      className="mr-2"
+                    />
+                    <span className="text-sm text-gray-300">
+                      Gerar senha temporária automaticamente
+                    </span>
                   </label>
-                  <input
-                    type="password"
-                    name="confirmPassword"
-                    value={form.confirmPassword}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2"
-                    placeholder="Confirme a senha"
-                  />
+                  
+                  <label className="flex items-center mb-4">
+                    <input
+                      type="radio"
+                      name="passwordType"
+                      checked={!form.generatePassword}
+                      onChange={() => setForm(prev => ({ 
+                        ...prev, 
+                        generatePassword: false
+                      }))}
+                      className="mr-2"
+                    />
+                    <span className="text-sm text-gray-300">
+                      Criar senha temporária manualmente
+                    </span>
+                  </label>
                 </div>
+
+                {!form.generatePassword && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Senha Temporária
+                    </label>
+                    <input
+                      type="password"
+                      name="password"
+                      value={form.password}
+                      onChange={handleInputChange}
+                      required={!form.generatePassword}
+                      className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2"
+                      placeholder="Senha forte: 8+ chars, maiúscula, minúscula, especial"
+                    />
+                    <p className="text-gray-400 text-xs mt-1">
+                      Esta senha será temporária. O usuário será obrigado a alterá-la no primeiro login.
+                    </p>
+                  </div>
+                )}
+
+                {form.generatePassword && (
+                  <div className="bg-gray-900/50 border border-gray-600 rounded-lg p-4">
+                    <div className="flex items-center">
+                      <div className="text-green-400 text-lg mr-2">🎲</div>
+                      <div>
+                        <h4 className="text-green-300 font-medium">Geração Automática</h4>
+                        <p className="text-green-200 text-sm">
+                          Uma senha temporária segura será gerada automaticamente e exibida após a criação.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -205,7 +262,7 @@ export default function AdminPage() {
                       ? 'bg-green-900/30 border border-green-700 text-green-200' 
                       : 'bg-red-900/30 border border-red-700 text-red-200'
                   }`}>
-                    {message.text}
+                    <div className="whitespace-pre-line">{message.text}</div>
                   </div>
                 )}
 

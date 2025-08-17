@@ -11,7 +11,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:cucumber": "cucumber-js",
-    "create-super-admin": "node scripts/create-super-admin.js"
+    "create-super-admin": "npx tsx src/scripts/create-super-admin.ts"
   },
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -45,6 +45,7 @@
     "jest-environment-jsdom": "^30.0.5",
     "playwright": "^1.54.2",
     "tailwindcss": "^4",
+    "tsx": "^4.20.4",
     "typescript": "^5"
   }
 }

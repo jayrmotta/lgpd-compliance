@@ -88,7 +88,7 @@ function LoginContent() {
           localStorage.setItem('userEmail', formData.email);
           if (token) {
             localStorage.setItem('authToken', token);
-            console.log('Login successful, token stored from header, redirecting to dashboard');
+            // Login successful, token stored, redirecting to dashboard
           } else {
             console.warn('Login successful but no token found in Authorization header');
           }

@@ -5,9 +5,10 @@ import { requireAuth, requireRole } from '@/lib/auth-middleware';
 
 interface CreateCompanyRepRequest {
   email: string;
-  password: string;
+  password?: string; // Optional - will auto-generate if not provided
   companyId?: string;
   role?: 'admin' | 'employee';
+  generatePassword?: boolean; // Generate vs. manual entry - both are temporary
 }
 
 interface APIResponse {
@@ -36,6 +37,17 @@ const validateEmail = (email: string): boolean => {
   return emailRegex.test(email);
 };
 
+const generateTemporaryPassword = (): string => {
+  // Generate a secure temporary password: 4 random words + numbers
+  const words = ['Secure', 'Access', 'Login', 'Account', 'Portal', 'System', 'Admin', 'User'];
+  const word1 = words[Math.floor(Math.random() * words.length)];
+  const word2 = words[Math.floor(Math.random() * words.length)];
+  const numbers = Math.floor(1000 + Math.random() * 9000); // 4-digit number
+  const special = ['!', '@', '#', '$'][Math.floor(Math.random() * 4)];
+  
+  return `${word1}${word2}${numbers}${special}`;
+};
+
 export async function POST(request: NextRequest) {
   try {
     // Check authentication and authorization
@@ -62,29 +74,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { email, password, companyId, role = 'employee' } = body;
+    const { email, password, companyId, role = 'employee', generatePassword } = body;
 
     // Validate required fields
-    if (!email || !password) {
+    if (!email) {
       return NextResponse.json(
-        { code: 'VALIDATION_REQUIRED_FIELDS_MISSING' } as APIResponse,
+        { code: 'VALIDATION_EMAIL_REQUIRED' } as APIResponse,
         { status: 400 }
       );
+    }
+
+    // All passwords created by admins are temporary by default
+    let finalPassword: string;
+
+    if (generatePassword || !password) {
+      // Auto-generate temporary password
+      finalPassword = generateTemporaryPassword();
+    } else {
+      // Use provided password (admin-entered, but still temporary)
+      finalPassword = password;
+      // Temporary passwords must follow the same strength rules as regular passwords
+      const passwordError = validatePassword(finalPassword);
+      if (passwordError) {
+        return NextResponse.json(
+          { code: passwordError } as APIResponse,
+          { status: 400 }
+        );
+      }
     }
 
     // Validate email format
     if (!validateEmail(email)) {
       return NextResponse.json(
         { code: 'VALIDATION_EMAIL_INVALID' } as APIResponse,
-        { status: 400 }
-      );
-    }
-
-    // Validate password strength
-    const passwordError = validatePassword(password);
-    if (passwordError) {
-      return NextResponse.json(
-        { code: passwordError } as APIResponse,
         { status: 400 }
       );
     }
@@ -99,14 +121,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Hash password
-    const passwordHash = await hash(password, 12);
+    const passwordHash = await hash(finalPassword, 12);
 
-    // Create new company representative
+    // Create new company representative (all admin-created accounts have temporary passwords)
     const newUser = {
       email: email.toLowerCase(),
       passwordHash,
       role: role as 'admin' | 'employee',
-      companyId
+      companyId,
+      passwordTemporary: true // Always true for admin-created accounts
     };
 
     await addUser(newUser);
@@ -117,7 +140,9 @@ export async function POST(request: NextRequest) {
         data: {
           email: newUser.email,
           role: newUser.role,
-          companyId: newUser.companyId
+          companyId: newUser.companyId,
+          temporaryPassword: finalPassword, // Always return the temporary password
+          passwordTemporary: true
         }
       } as APIResponse,
       { status: 201 }

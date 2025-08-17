@@ -4,16 +4,23 @@
 export const ERROR_MESSAGES: Record<string, string> = {
   // Validation errors
   VALIDATION_REQUIRED_FIELDS_MISSING: 'Email e senha são obrigatórios',
+  VALIDATION_EMAIL_REQUIRED: 'Email é obrigatório',
   VALIDATION_EMAIL_INVALID: 'Formato de email inválido',
   VALIDATION_PASSWORD_WEAK: 'Senha deve ter pelo menos 8 caracteres, incluindo maiúscula, minúscula e número',
   PASSWORD_TOO_WEAK: 'A senha deve ter pelo menos 8 caracteres, incluindo maiúscula, minúscula e caractere especial',
+  VALIDATION_PASSWORD_OR_TEMPORARY_REQUIRED: 'Forneça uma senha ou marque "Gerar senha temporária"',
+  VALIDATION_TEMPORARY_PASSWORD_TOO_SHORT: 'Senha temporária deve ter pelo menos 6 caracteres',
   VALIDATION_USER_TYPE_INVALID: 'Tipo de usuário inválido',
   
   // Authentication errors
   INVALID_CREDENTIALS: 'Email ou senha incorretos',
+  INVALID_CURRENT_PASSWORD: 'Senha atual incorreta',
   USER_ALREADY_EXISTS: 'Usuário já existe com este email',
   USER_NOT_FOUND: 'Usuário não encontrado',
   REGISTRATION_COMPANY_REPRESENTATIVES_NOT_ALLOWED: 'Representantes da empresa não podem se registrar. Entre em contato com o administrador da plataforma.',
+  VALIDATION_PASSWORDS_DONT_MATCH: 'Nova senha e confirmação não coincidem',
+  NEW_PASSWORD_SAME_AS_CURRENT: 'A nova senha deve ser diferente da senha atual',
+  PASSWORD_CHANGE_SUCCESS: 'Senha alterada com sucesso',
   
   // Server errors
   SERVER_ERROR: 'Erro interno do servidor',

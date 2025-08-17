@@ -44,6 +44,7 @@ export interface User {
   role: 'data_subject' | 'super_admin' | 'admin' | 'employee';
   createdAt: Date;
   companyId?: string;
+  passwordTemporary?: boolean;
 }
 
 /**
@@ -69,6 +70,7 @@ export class DatabaseManager {
     this.dbAll = promisify(this.db.all.bind(this.db));
 
     await this.createTables();
+    await this.runMigrations();
     if (process.env.NODE_ENV === 'development') {
       console.log('Database initialized successfully');
     }
@@ -86,7 +88,8 @@ export class DatabaseManager {
           password_hash TEXT NOT NULL,
           role TEXT NOT NULL CHECK(role IN ('data_subject', 'super_admin', 'admin', 'employee')),
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          company_id TEXT
+          company_id TEXT,
+          password_temporary BOOLEAN DEFAULT 0
         )
       `);
 
@@ -141,6 +144,24 @@ export class DatabaseManager {
     } catch (error) {
       console.error('Database table creation failed:', error);
       throw error;
+    }
+  }
+
+  private async runMigrations(): Promise<void> {
+    if (!this.dbRun) throw new Error('Database not initialized');
+
+    try {
+      // Migration: Add password_temporary column if it doesn't exist
+      await this.dbRun(`
+        ALTER TABLE users ADD COLUMN password_temporary BOOLEAN DEFAULT 0
+      `).catch(() => {
+        // Column already exists, ignore error
+      });
+    } catch {
+      // Migration errors are generally safe to ignore if the column already exists
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Migration completed (some steps may have been skipped)');
+      }
     }
   }
 
@@ -282,11 +303,21 @@ export class DatabaseManager {
     const createdAt = new Date();
 
     await this.dbRun(`
-      INSERT INTO users (id, email, password_hash, role, created_at, company_id)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `, [id, user.email, user.passwordHash, user.role, createdAt.toISOString(), user.companyId || null]);
+      INSERT INTO users (id, email, password_hash, role, created_at, company_id, password_temporary)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `, [id, user.email, user.passwordHash, user.role, createdAt.toISOString(), user.companyId || null, user.passwordTemporary ? 1 : 0]);
 
     return id;
+  }
+
+  async updateUser(user: User): Promise<void> {
+    if (!this.dbRun) throw new Error('Database not initialized');
+
+    await this.dbRun(`
+      UPDATE users 
+      SET password_hash = ?, role = ?, company_id = ?, password_temporary = ?
+      WHERE id = ?
+    `, [user.passwordHash, user.role, user.companyId || null, user.passwordTemporary ? 1 : 0, user.id]);
   }
 
   async findUserByEmail(email: string): Promise<User | null> {
@@ -304,7 +335,8 @@ export class DatabaseManager {
       passwordHash: row.password_hash as string,
       role: row.role as 'data_subject' | 'super_admin' | 'admin' | 'employee',
       createdAt: new Date(row.created_at as string),
-      companyId: (row.company_id as string) || undefined
+      companyId: (row.company_id as string) || undefined,
+      passwordTemporary: Boolean(row.password_temporary)
     };
   }
 
@@ -321,7 +353,8 @@ export class DatabaseManager {
       passwordHash: row.password_hash as string,
       role: row.role as 'data_subject' | 'super_admin' | 'admin' | 'employee',
       createdAt: new Date(row.created_at as string),
-      companyId: (row.company_id as string) || undefined
+      companyId: (row.company_id as string) || undefined,
+      passwordTemporary: Boolean(row.password_temporary)
     }));
   }
 
@@ -420,6 +453,7 @@ export const closeDatabase = () => databaseManager.close();
 
 // User management functions
 export const createUser = (user: Omit<User, 'id' | 'createdAt'>) => databaseManager.createUser(user);
+export const updateUser = (user: User) => databaseManager.updateUser(user);
 export const findUserByEmail = (email: string) => databaseManager.findUserByEmail(email);
 export const getAllUsers = () => databaseManager.getAllUsers();
 export const clearAllUsers = () => databaseManager.clearAllUsers();

@@ -64,10 +64,7 @@ function CompanySetupPage() {
     try {
       // In production, this would call an API to register the public key
       // For demo, we'll simulate this
-      console.log('Registering public key:', {
-        fingerprint: getKeyFingerprint(keyPair.publicKey),
-        publicKey: keyPair.publicKey
-      });
+      // Public key registered with fingerprint: ${getKeyFingerprint(keyPair.publicKey)}
       
       alert('Public key registered successfully! You can now access the company dashboard.');
       router.push('/company-dashboard');
