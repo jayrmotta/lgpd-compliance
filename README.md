@@ -372,7 +372,7 @@ npx playwright install chromium
 npx playwright install-deps
 ```
 
-Para solução de problemas mais detalhada, veja [TESTING.md](./TESTING.md).
+Para solução de problemas mais detalhada, consulte a documentação inline neste README.
 
 ## 🤝 Contribuindo
 
@@ -401,7 +401,6 @@ npm test && npm run test:cucumber
 
 ## 📚 Documentação
 
-- **[TESTING.md](./TESTING.md)** - Guia abrangente de testes
 - **[CLAUDE.md](./CLAUDE.md)** - Regras de desenvolvimento de IA específicas do projeto
 
 ## 🔗 Recursos
