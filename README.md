@@ -50,7 +50,34 @@ npm install
 
 2. Atualize o arquivo `.env` com seus valores de configuração.
 
-### 3. Servidor de Desenvolvimento
+### 3. Criar Conta de Super Administrador
+
+**⚠️ IMPORTANTE:** Antes de usar a plataforma, você deve criar a conta inicial do operador da plataforma (super admin).
+
+```bash
+# Método 1: Com argumentos de linha de comando (recomendado)
+npm run create-super-admin -- --email admin@yourplatform.com --password YourSecurePass123!
+
+# Método 2: Modo interativo (solicita entrada)
+npm run create-super-admin
+
+# Ver ajuda
+npm run create-super-admin -- --help
+```
+
+**Requisitos de Senha:**
+- Mínimo 8 caracteres
+- Pelo menos uma letra maiúscula
+- Pelo menos uma letra minúscula  
+- Pelo menos um caractere especial
+
+**Recursos de Segurança:**
+- ✅ Apenas um super admin permitido por sistema
+- ✅ Senhas são hasheadas com bcrypt (salt rounds: 12)
+- ✅ Validação rigorosa de entrada
+- ✅ Credenciais nunca armazenadas permanentemente no script
+
+### 4. Servidor de Desenvolvimento
 
 ```bash
 npm run dev
@@ -69,6 +96,7 @@ npm start
 
 | Script | Descrição |
 |--------|-----------|
+| `npm run create-super-admin` | **Criar conta de super administrador inicial** |
 | `npm run dev` | Iniciar servidor de desenvolvimento |
 | `npm run build` | Construir a aplicação para produção |
 | `npm run start` | Iniciar o servidor de produção |
@@ -82,7 +110,13 @@ npm start
 
 ### **Capítulo 1: O Administrador da Plataforma (Super Admin) Configura o Sistema**
 
-Maria, uma super administradora da empresa da plataforma LGPD, inicia seu dia fazendo login no **painel administrativo** (`/admin/page.tsx:15`). Ela possui o mais alto nível de acesso (`ROLE_HIERARCHY.super_admin: 4` em `common.ts:26`) e precisa configurar uma nova empresa na plataforma.
+Maria, operadora da plataforma LGPD, inicia a configuração do sistema executando o comando de criação do super administrador:
+
+```bash
+npm run create-super-admin -- --email maria@lgpdplatform.com --password SecureAdmin123!
+```
+
+O sistema cria sua conta com o mais alto nível de acesso (`ROLE_HIERARCHY.super_admin: 4` em `common.ts:26`). Agora ela pode fazer login no **painel administrativo** (`/admin/page.tsx:15`) e precisa configurar uma nova empresa na plataforma.
 
 Maria navega para a interface administrativa onde vê um aviso crítico: "Esta página é apenas para operadores da plataforma" (`admin/page.tsx:110`). Ela preenche o formulário de criação de representante da empresa para a TechCorp Ltd, inserindo:
 - Email: admin@techcorp.com  

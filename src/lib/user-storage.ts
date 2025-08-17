@@ -10,18 +10,21 @@ import {
   databaseManager
 } from './database-v2';
 
-// Ensure database is initialized
-let dbInitialized = false;
+// Ensure database is initialized with proper singleton pattern
+let dbInitPromise: Promise<void> | null = null;
+
 async function ensureDbInitialized() {
-  if (!dbInitialized) {
-    // Use separate database for tests
-    if (process.env.NODE_ENV === 'test') {
-      await databaseManager.close();
-      process.env.DATABASE_PATH = ':memory:';
-    }
-    await initializeDatabase();
-    dbInitialized = true;
+  if (!dbInitPromise) {
+    dbInitPromise = (async () => {
+      // Use separate database for tests
+      if (process.env.NODE_ENV === 'test') {
+        await databaseManager.close();
+        process.env.DATABASE_PATH = ':memory:';
+      }
+      await initializeDatabase();
+    })();
   }
+  await dbInitPromise;
 }
 
 export async function findUserByEmail(email: string): Promise<User | null> {

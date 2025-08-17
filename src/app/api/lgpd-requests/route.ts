@@ -3,7 +3,6 @@ import { createHash } from 'crypto';
 import { 
   createLGPDRequest, 
   getUserLGPDRequests, 
-  createDemoCompany,
   getCompanyPublicKey,
   storeEncryptedLGPDData,
   updateRequestStatus,
@@ -111,28 +110,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Initialize database and ensure demo company exists
-    let companyId: string;
-    try {
-      await initializeDatabase();
-      companyId = await createDemoCompany();
-    } catch (error) {
-      console.error('Failed to initialize database or create demo company:', error);
-      return NextResponse.json(
-        { code: 'SERVER_ERROR' } as APIResponse,
-        { status: 500 }
-      );
-    }
-
-    // Get company's public key for encryption
+    // Initialize database and check for properly configured company
+    const companyId = 'COMPANY-DEMO-TECHCORP';
     let companyPublicKey: string;
     try {
+      await initializeDatabase();
+      
+      // Check if company exists and is properly configured (not using demo keys)
       companyPublicKey = await getCompanyPublicKey(companyId);
+      
+      // Validate that it's not a placeholder key
+      if (companyPublicKey === 'DEMO_PUBLIC_KEY_TO_BE_REPLACED' || !companyPublicKey) {
+        return NextResponse.json(
+          { code: 'COMPANY_SETUP_REQUIRED' } as APIResponse,
+          { status: 400 }
+        );
+      }
     } catch (error) {
-      console.error('Failed to get company public key:', error);
+      console.error('Company setup validation failed:', error);
       return NextResponse.json(
-        { code: 'SERVER_ERROR' } as APIResponse,
-        { status: 500 }
+        { code: 'COMPANY_SETUP_REQUIRED' } as APIResponse,
+        { status: 400 }
       );
     }
 

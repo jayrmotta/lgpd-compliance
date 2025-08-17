@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import { authenticatedFetch } from '@/lib/auth-fetch';
 
 function LGPDRequestsContent() {
@@ -14,14 +15,19 @@ function LGPDRequestsContent() {
   const [showVerification, setShowVerification] = useState(false);
   const [cpf, setCpf] = useState('');
   const [identityVerified, setIdentityVerified] = useState(false);
-  const [usedMockButton, setUsedMockButton] = useState(false);
-  const [mockVerificationAttempted, setMockVerificationAttempted] = useState(false);
-  const [securityProcessing, setSecurityProcessing] = useState(false);
+  const [securityProcessing] = useState(false);
   const [securityError] = useState(false);
   const [browserCompatible, setBrowserCompatible] = useState(true);
   const [verificationError, setVerificationError] = useState('');
+  const [formError, setFormError] = useState('');
   const [submittingRequest, setSubmittingRequest] = useState(false);
   const [submissionError, setSubmissionError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [pixQRCode, setPixQRCode] = useState('');
+  const [pixTransactionId, setPixTransactionId] = useState('');
+  const [showPixFlow, setShowPixFlow] = useState(false);
+  const [pixVerified, setPixVerified] = useState(false);
+  const [pixInstructions, setPixInstructions] = useState('');
 
   const getSuccessMessage = () => {
     switch (selectedRequestType) {
@@ -59,21 +65,6 @@ function LGPDRequestsContent() {
     }
   }, [router, searchParams]);
 
-  // Auto-trigger verification when CPF is entered after mock verification was attempted
-  useEffect(() => {
-    if (mockVerificationAttempted && cpf && !identityVerified) {
-      // Validate CPF - if it's 000.000.000-00, show error
-      if (cpf === '000.000.000-00') {
-        setVerificationError('Falha na verificação do CPF');
-        return;
-      }
-      
-      setIdentityVerified(true);
-      setUsedMockButton(false); // This is auto-completion, not mock
-      setMockVerificationAttempted(false);
-      setVerificationError('');
-    }
-  }, [cpf, mockVerificationAttempted, identityVerified]);
 
   const handleLogout = () => {
     localStorage.removeItem('isLoggedIn');
@@ -110,55 +101,89 @@ function LGPDRequestsContent() {
 
   const handleSubmitRequest = () => {
     if (!selectedRequestType || !reason || !description) {
-      alert('Por favor, preencha todos os campos');
+      setFormError('Por favor, preencha todos os campos');
       return;
     }
     
-    // Show security confirmation
-    setSecurityProcessing(true);
+    setFormError('');
     
-    // Simulate security processing delay
-    setTimeout(() => {
-      setSecurityProcessing(false);
-      setShowVerification(true);
-    }, 2000);
+    // Proceed directly to verification without artificial delay
+    setShowVerification(true);
   };
 
-  const handleMockVerification = () => {
-    if (!cpf) {
-      setMockVerificationAttempted(true);
-      alert('Por favor, insira o CPF');
-      return;
-    }
-    
-    // Validate CPF - if it's 000.000.000-00, show error
-    if (cpf === '000.000.000-00') {
-      setVerificationError('CPF verification failed');
-      return;
-    }
-    
-    setIdentityVerified(true);
-    setUsedMockButton(true);
-    setVerificationError('');
-  };
   
-  const handleRegularVerification = () => {
+  const handlePixVerification = async () => {
     if (!cpf) {
-      setMockVerificationAttempted(true);
-      alert('Por favor, insira o CPF');
+      setVerificationError('Por favor, insira o CPF');
       return;
     }
     
-    // Validate CPF - if it's 000.000.000-00, show error
-    if (cpf === '000.000.000-00') {
-      setVerificationError('CPF verification failed');
+    // Validate CPF format
+    const cpfRegex = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/;
+    if (!cpfRegex.test(cpf) || cpf === '000.000.000-00') {
+      setVerificationError('CPF inválido. Use o formato 123.456.789-00');
       return;
     }
-    
-    setIdentityVerified(true);
-    setUsedMockButton(false);
-    setVerificationError('');
+
+    try {
+      // Generate PIX QR Code
+      const response = await authenticatedFetch('/api/pix/qr-code', {
+        method: 'POST',
+        body: JSON.stringify({
+          amount: 0.01,
+          description: 'Verificação LGPD - Exercício de Direito'
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setVerificationError('Erro ao gerar QR Code PIX');
+        return;
+      }
+
+      setPixQRCode(data.data.qrCode);
+      setPixTransactionId(data.data.transactionId);
+      setPixInstructions(data.data.instructions);
+      setShowPixFlow(true);
+      setVerificationError('');
+
+    } catch (error) {
+      console.error('PIX QR Code generation error:', error);
+      setVerificationError('Erro ao gerar QR Code PIX');
+    }
   };
+
+  const handlePixPaymentSimulation = async () => {
+    try {
+      const response = await authenticatedFetch('/api/pix/verify', {
+        method: 'POST',
+        body: JSON.stringify({
+          transactionId: pixTransactionId,
+          cpf: cpf
+        })
+      });
+
+      if (!response.ok) {
+        setVerificationError('Falha na verificação PIX');
+        return;
+      }
+
+      setPixVerified(true);
+      setIdentityVerified(true);
+      setVerificationError('');
+      
+      // Automatically proceed to final submission after PIX verification
+      setTimeout(() => {
+        handleFinalSubmit();
+      }, 1000); // Brief delay to show verification success
+
+    } catch (error) {
+      console.error('PIX verification error:', error);
+      setVerificationError('Erro na verificação PIX');
+    }
+  };
+
 
   const handleFinalSubmit = async () => {
     setSubmittingRequest(true);
@@ -183,26 +208,25 @@ function LGPDRequestsContent() {
         return;
       }
 
-      // Success - show confirmation with encryption details
+      // Success - show brief confirmation and redirect immediately
       const requestId = data.data?.requestId || 'REQ-' + Date.now();
       const encrypted = data.data?.encrypted;
-      const keyFingerprint = data.data?.publicKeyFingerprint;
       
       let message = `✅ Solicitação LGPD criada com sucesso!\n\nID: ${requestId}\n\n`;
       
       if (encrypted) {
-        message += `🔒 DADOS CRIPTOGRAFADOS COM SEGURANÇA\n`;
-        message += `• Seus dados pessoais foram criptografados usando sealed box\n`;
-        message += `• Apenas a empresa pode descriptografar (chave: ${keyFingerprint})\n`;
-        message += `• A plataforma NÃO pode ver seus dados pessoais\n`;
-        message += `• Operador com conhecimento zero implementado\n\n`;
-        message += `✅ Seus dados estão seguros e protegidos!`;
+        message += `🔒 Dados criptografados com segurança - redirecionando...`;
       } else {
-        message += `⚠️ Dados enviados sem criptografia`;
+        message += `⚠️ Dados enviados sem criptografia - redirecionando...`;
       }
       
-      alert(message);
-      router.push('/my-requests');
+      setSuccessMessage(message);
+      setSubmittingRequest(false);
+      
+      // Redirect quickly after success
+      setTimeout(() => {
+        router.push('/my-requests');
+      }, 1500);
 
     } catch (error) {
       console.error('Request submission error:', error);
@@ -296,6 +320,18 @@ function LGPDRequestsContent() {
             </div>
           )}
 
+          {formError && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+              <p>{formError}</p>
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+              <div className="whitespace-pre-line">{successMessage}</div>
+            </div>
+          )}
+
           {selectedRequestType && !showVerification && (
             <div className="bg-gray-800 shadow rounded-lg">
               <div className="px-4 py-5 sm:p-6">
@@ -361,24 +397,39 @@ function LGPDRequestsContent() {
 
           {submissionError && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-              <p>Erro ao enviar solicitação: {submissionError}</p>
-              <p className="text-sm">Tente novamente ou entre em contato com o suporte</p>
+              {submissionError === 'COMPANY_SETUP_REQUIRED' ? (
+                <div>
+                  <p>⚠️ Configuração da empresa necessária</p>
+                  <p className="text-sm">A empresa precisa configurar as chaves de criptografia antes de receber solicitações LGPD.</p>
+                  <a 
+                    href="/company-setup" 
+                    className="text-blue-600 hover:text-blue-800 underline text-sm"
+                  >
+                    Ir para Configuração da Empresa
+                  </a>
+                </div>
+              ) : (
+                <div>
+                  <p>Erro ao enviar solicitação: {submissionError}</p>
+                  <p className="text-sm">Tente novamente ou entre em contato com o suporte</p>
+                </div>
+              )}
             </div>
           )}
           
-          {showVerification && !identityVerified && (
-            <div data-testid="identity-verification-section" className="bg-white shadow rounded-lg">
+          {showVerification && !identityVerified && !showPixFlow && (
+            <div data-testid="identity-verification-section" className="bg-gray-800 shadow rounded-lg">
               <div className="px-4 py-5 sm:p-6">
                 <h2 className="text-lg font-medium text-white mb-6">
                   Verificação de Identidade
                 </h2>
                 
                 <div className="text-center mb-6">
-                  <div className="text-blue-600 text-lg font-medium mb-4">
-                    📋 Verificação Simplificada
+                  <div className="text-blue-400 text-lg font-medium mb-4">
+                    🔐 Verificação PIX
                   </div>
-                  <p className="text-sm text-gray-600">
-                    Insira seu CPF para verificar sua identidade
+                  <p className="text-sm text-gray-300">
+                    Para garantir a segurança, você precisa verificar sua identidade via PIX
                   </p>
                 </div>
                 
@@ -391,28 +442,94 @@ function LGPDRequestsContent() {
                       type="text"
                       data-testid="cpf-input"
                       value={cpf}
-                      onChange={(e) => setCpf(e.target.value)}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+                        let formatted = value;
+                        
+                        // Apply CPF mask: 000.000.000-00
+                        if (value.length >= 3) {
+                          formatted = value.slice(0, 3) + '.' + value.slice(3);
+                        }
+                        if (value.length >= 6) {
+                          formatted = value.slice(0, 3) + '.' + value.slice(3, 6) + '.' + value.slice(6);
+                        }
+                        if (value.length >= 9) {
+                          formatted = value.slice(0, 3) + '.' + value.slice(3, 6) + '.' + value.slice(6, 9) + '-' + value.slice(9, 11);
+                        }
+                        
+                        setCpf(formatted);
+                      }}
+                      maxLength={14}
                       className="mt-1 block w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2"
                       placeholder="123.456.789-00"
                     />
                   </div>
                   
-                  {process.env.NODE_ENV === 'development' && (
-                    <button 
-                      data-testid="mock-verification-button"
-                      className="w-full bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700"
-                      onClick={handleMockVerification}
-                    >
-                      Verificação Simulada
-                    </button>
-                  )}
+                  <button 
+                    data-testid="generate-pix-qr"
+                    className="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
+                    onClick={handlePixVerification}
+                  >
+                    🔐 Gerar QR Code PIX (R$ 0,01)
+                  </button>
+
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showPixFlow && !pixVerified && (
+            <div data-testid="pix-qr-section" className="bg-gray-800 shadow rounded-lg">
+              <div className="px-4 py-5 sm:p-6">
+                <h2 className="text-lg font-medium text-white mb-6">
+                  Pagamento PIX - Verificação de Identidade
+                </h2>
+                
+                <div className="text-center mb-6">
+                  <div className="bg-white p-4 rounded-lg inline-block mb-4">
+                    <Image 
+                      src={pixQRCode} 
+                      alt="QR Code PIX" 
+                      width={256}
+                      height={256}
+                      className="mx-auto"
+                      data-testid="pix-qr-image"
+                    />
+                  </div>
+                  
+                  <div className="text-green-400 text-lg font-medium mb-2">
+                    💰 PIX R$ 0,01
+                  </div>
+                  
+                  <p className="text-sm text-gray-300 mb-4">
+                    {pixInstructions}
+                  </p>
+                  
+                  <div className="bg-blue-900/30 border border-blue-600 text-blue-200 p-3 rounded text-sm">
+                    <p><strong>ID da Transação:</strong> {pixTransactionId}</p>
+                    <p><strong>Valor:</strong> R$ 0,01</p>
+                    <p><strong>Descrição:</strong> Verificação LGPD</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <button 
+                    data-testid="simulate-pix-payment"
+                    className="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
+                    onClick={handlePixPaymentSimulation}
+                  >
+                    ✅ Simular Pagamento Realizado
+                  </button>
                   
                   <button 
-                    data-testid="verify-identity"
-                    className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-                    onClick={handleRegularVerification}
+                    className="w-full bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+                    onClick={() => {
+                      setShowPixFlow(false);
+                      setPixQRCode('');
+                      setPixTransactionId('');
+                    }}
                   >
-                    Verificar Identidade
+                    Cancelar e Voltar
                   </button>
                 </div>
               </div>
@@ -427,38 +544,22 @@ function LGPDRequestsContent() {
             </div>
           )}
           
-          {identityVerified && !submittingRequest && (
+          {identityVerified && !submittingRequest && !successMessage && (
             <div data-testid="identity-verified" className="bg-gray-800 shadow rounded-lg">
               <div className="px-4 py-5 sm:p-6">
                 <div className="text-center mb-6">
                   <div data-testid="request-submitted" className="text-green-400 text-xl font-semibold mb-4">
-                    {usedMockButton ? 'Verificação simulada realizada com sucesso' : 'Identidade verificada com sucesso'}
+                    ✅ Identidade verificada - Processando solicitação...
                   </div>
                   <div className="text-blue-300 mb-2">
                     {getSuccessMessage()}
                   </div>
                   <div data-testid="encryption-notice" className="text-blue-400 text-sm">
-                    Sua solicitação está sendo criptografada antes do envio
+                    Sua solicitação está sendo criptografada e enviada automaticamente
                   </div>
                   <div className="text-blue-400 text-sm">
                     A empresa só verá dados criptografados até processar sua solicitação
                   </div>
-                </div>
-                
-                <div className="text-center">
-                  <button 
-                    data-testid="final-submit"
-                    className="bg-green-600 text-white px-6 py-3 rounded-md hover:bg-green-700 mr-4"
-                    onClick={handleFinalSubmit}
-                  >
-                    Finalizar Solicitação
-                  </button>
-                  <button 
-                    className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700"
-                    onClick={() => router.push('/my-requests')}
-                  >
-                    Ver Minhas Solicitações
-                  </button>
                 </div>
               </div>
             </div>

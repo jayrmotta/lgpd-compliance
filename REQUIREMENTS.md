@@ -114,7 +114,7 @@ Para acesso à plataforma:
 - [x] Configurar BDD testing com Cucumber
 - [x] **✅ COMPLETO** Implementar tokens JWT para sessões
 - [x] **✅ COMPLETO** Implementar sealed box com libsodium
-- [x] **✅ COMPLETO** Criar API de autenticação PIX para LGPD (mock implementado)
+- [x] **✅ COMPLETO** Criar API de autenticação PIX para LGPD com QR code funcional
 - [x] **✅ COMPLETO** Modelar banco com separação dados/metadados
 
 #### Status Final Sprint 1 - 100% Completo:
@@ -158,20 +158,23 @@ Para acesso à plataforma:
    - Validação básica de CPF (mock)
 
 ### Critérios de Aceitação Sprint 1:
-- [ ] Usuário pode fazer login e receber JWT válido
-- [ ] Dados podem ser criptografados E2E com sealed boxes
-- [ ] Banco de dados persistente funcionando
-- [ ] Mock PIX retorna QR code e simula pagamento
-- [ ] Testes cobrindo funcionalidades principais
-- [ ] Frontend conectado aos novos endpoints
+- [x] Usuário pode fazer login e receber JWT válido
+- [x] Dados podem ser criptografados E2E com sealed boxes
+- [x] Banco de dados persistente funcionando
+- [x] Mock PIX retorna QR code e simula pagamento
+- [x] Testes cobrindo funcionalidades principais
+- [x] Frontend conectado aos novos endpoints
 
 ### Estimativa Total: 8-12 horas de desenvolvimento
 
-### Sprint 2 - Frontend & Fluxos (Semana 2)
-- [ ] Tela de solicitação LGPD (titular)
-- [ ] Fluxo completo de ACESSO a dados
-- [ ] Fluxo completo de ELIMINAÇÃO
-- [ ] Tela empresa vê solicitações (descriptografa)
+### Sprint 2 - Frontend & Fluxos (Semana 2) ✅ **COMPLETO**
+- [x] Tela de solicitação LGPD (titular)
+- [x] Fluxo completo de ACESSO a dados
+- [x] Fluxo completo de ELIMINAÇÃO
+- [x] Tela empresa vê solicitações (descriptografa)
+- [x] Dashboard administrativo para gerenciamento
+- [x] Sistema de logs e auditoria
+- [x] Middleware de autenticação e autorização
 
 ### Sprint 3 - Documentação & Deploy (Semana 3)
 - [ ] README com arquitetura
