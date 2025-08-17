@@ -118,25 +118,25 @@ npm run create-super-admin -- --email maria@lgpdplatform.com --password SecureAd
 
 O sistema cria sua conta com o mais alto nível de acesso. Agora ela pode fazer login no **painel administrativo** (`/admin`) e precisa configurar uma nova empresa na plataforma.
 
-Maria navega para a interface administrativa onde vê um aviso crítico: "Esta página é apenas para operadores da plataforma". Ela preenche o formulário de criação de representante da empresa para a TechCorp Ltd, inserindo:
+Maria navega para a interface administrativa onde vê um aviso crítico: "Esta página é apenas para operadores da plataforma. Representantes da empresa devem ser criados através desta interface." Ela preenche o formulário de criação de representante da empresa para a TechCorp Ltd, inserindo:
 - Email: admin@techcorp.com  
-- Senha: SecurePass123!
-- ID da Empresa: techcorp-ltd
+- Company ID: techcorp-ltd
 - Função: admin
+- Seleciona "Gerar senha temporária automaticamente"
 
-Quando ela clica em "Criar Representante da Empresa", o sistema chama `/api/admin/company-representatives` que valida seus privilégios de super admin e cria a conta do representante da empresa com função 'admin'.
+Quando ela clica em "Criar Representante da Empresa", o sistema chama `/api/admin/company-representatives` e gera uma senha temporária automaticamente que deve ser enviada de forma segura para João.
 
 ### **Capítulo 2: Representante da Empresa Configura a Criptografia**
 
 João, o recém-criado administrador da TechCorp Ltd, recebe suas credenciais de login de forma segura. Ele visita a plataforma e faz login em `/login` usando o sistema de autenticação. Após login bem-sucedido, ele é direcionado para `/company-setup`.
 
-João vê um aviso crítico de segurança: "Chaves privadas são geradas em seu navegador e NUNCA enviadas aos nossos servidores". Ele clica em "Gerar Chaves de Criptografia", que aciona a função de geração de chaves.
+João vê um aviso crítico de segurança: "Private keys are generated in your browser and NEVER sent to our servers". Ele clica em "Gerar Chaves de Criptografia", que aciona a função de geração de chaves.
 
 O sistema gera um par de chaves de criptografia:
 - Chave pública (para receber solicitações LGPD criptografadas)
 - Chave privada (para descriptografar solicitações - permanece no navegador)
 
-João salva sua chave privada no gerenciador de senhas, baixa o backup e confirma que salvou com segurança. O sistema registra a chave pública da empresa no banco de dados.
+João salva sua chave privada no gerenciador de senhas, baixa o backup usando "📁 Download Key File", marca "I have saved my private key securely" e clica em "✅ Register Public Key & Continue". O sistema registra a chave pública da empresa no banco de dados.
 
 ### **Capítulo 3: Titular de Dados Descobre Seus Direitos**
 
@@ -169,25 +169,25 @@ Em seu dashboard, Ana vê uma mensagem de boas-vindas e três opções principai
 
 ### **Capítulo 6: Criando uma Solicitação LGPD**
 
-Ana clica em "Solicitar Dados" que a leva para `/lgpd-requests?type=data_access`. O sistema primeiro realiza uma verificação de compatibilidade do navegador e mostra ✅ "Seu navegador é compatível".
+Ana clica em "Solicitar Dados" que a leva para `/lgpd-requests?type=data_access`. O sistema primeiro realiza uma verificação de compatibilidade do navegador e mostra "✓ Seu navegador é compatível".
 
 Ana preenche sua solicitação:
 - **Motivo**: "Quero verificar meus dados pessoais" 
 - **Descrição**: "Por favor, forneça todos os meus dados pessoais incluindo nome completo, endereço e dados comportamentais coletados sobre mim"
 
-Quando ela clica em "Enviar Solicitação", o sistema mostra uma mensagem de processamento de segurança: "Sua solicitação está sendo protegida".
+Quando ela preenche o formulário e procede, o sistema automaticamente inicia o processo de verificação de identidade via PIX.
 
 ### **Capítulo 7: Verificação de Identidade**
 
-O sistema agora requer verificação de identidade. Ana vê o formulário de verificação onde insere seu CPF: "123.456.789-00".
+O sistema agora requer verificação de identidade via PIX. Ana vê o formulário onde insere seu CPF: "123.456.789-00".
 
-Ela clica em "Verificar Identidade", que valida o formato do CPF e define que a identidade foi verificada.
+Ela clica em "🔐 Gerar QR Code PIX (R$ 0,01)", que gera um QR code PIX para pagamento de R$ 0,01. Após simular o pagamento com "✅ Simular Pagamento Realizado", sua identidade é verificada.
 
 ### **Capítulo 8: Submissão da Solicitação Criptografada**
 
-Com a identidade verificada, Ana vê a tela de confirmação final mostrando "Identidade verificada com sucesso" e "Sua solicitação está sendo criptografada antes do envio".
+Com a identidade verificada, Ana vê a tela de confirmação mostrando "✅ Identidade verificada - Processando solicitação..." e "Sua solicitação está sendo criptografada e enviada automaticamente".
 
-Ela clica em "Finalizar Solicitação", acionando o processo de criptografia em `/api/lgpd-requests`. O sistema:
+O sistema automaticamente aciona o processo de criptografia em `/api/lgpd-requests`:
 
 1. Verifica autenticação e valida os dados
 2. Busca a chave pública da TechCorp
