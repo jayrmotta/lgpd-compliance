@@ -4,7 +4,7 @@ describe('JWT Utils', () => {
   const mockUser = {
     userId: 'test-user-123',
     email: 'test@example.com',
-    userType: 'data_subject' as const
+    role: 'data_subject' as const
   };
 
   describe('generateToken', () => {
@@ -23,7 +23,7 @@ describe('JWT Utils', () => {
       expect(payload).not.toBeNull();
       expect(payload?.userId).toBe(mockUser.userId);
       expect(payload?.email).toBe(mockUser.email);
-      expect(payload?.userType).toBe(mockUser.userType);
+      expect(payload?.role).toBe(mockUser.role);
       expect(payload?.iat).toBeDefined();
       expect(payload?.exp).toBeDefined();
     });
@@ -80,7 +80,7 @@ describe('JWT Utils', () => {
       
       expect(refreshedPayload?.userId).toBe(originalPayload?.userId);
       expect(refreshedPayload?.email).toBe(originalPayload?.email);
-      expect(refreshedPayload?.userType).toBe(originalPayload?.userType);
+      expect(refreshedPayload?.role).toBe(originalPayload?.role);
       
       // The tokens might be the same if generated in the same second
       // What matters is that both are valid and contain the same user data

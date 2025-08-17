@@ -41,8 +41,9 @@ export interface User {
   id: string;
   email: string;
   passwordHash: string;
-  userType: 'data_subject' | 'company_representative';
+  role: 'data_subject' | 'super_admin' | 'admin' | 'employee';
   createdAt: Date;
+  companyId?: string;
 }
 
 /**
@@ -68,7 +69,9 @@ export class DatabaseManager {
     this.dbAll = promisify(this.db.all.bind(this.db));
 
     await this.createTables();
-    console.log('Database initialized successfully');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Database initialized successfully');
+    }
   }
 
   private async createTables(): Promise<void> {
@@ -81,8 +84,9 @@ export class DatabaseManager {
           id TEXT PRIMARY KEY,
           email TEXT UNIQUE NOT NULL,
           password_hash TEXT NOT NULL,
-          user_type TEXT NOT NULL CHECK(user_type IN ('data_subject', 'company_representative')),
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          role TEXT NOT NULL CHECK(role IN ('data_subject', 'super_admin', 'admin', 'employee')),
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          company_id TEXT
         )
       `);
 
@@ -187,8 +191,17 @@ export class DatabaseManager {
       ORDER BY created_at DESC
     `, [userId]);
 
-    return rows.map(row => ({
-      ...row,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (rows as any[]).map((row: Record<string, any>) => ({
+      id: row.id,
+      user_id: row.user_id,
+      company_id: row.company_id,
+      type: row.type as LGPDRequestType,
+      status: row.status as LGPDRequestStatus,
+      reason: row.reason,
+      description: row.description,
+      cpf_hash: row.cpf_hash,
+      pix_transaction_hash: row.pix_transaction_hash,
       created_at: new Date(row.created_at),
       response_due_at: new Date(row.response_due_at),
       completed_at: row.completed_at ? new Date(row.completed_at) : undefined
@@ -204,8 +217,17 @@ export class DatabaseManager {
       ORDER BY created_at DESC
     `, [companyId]);
 
-    return rows.map(row => ({
-      ...row,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (rows as any[]).map((row: Record<string, any>) => ({
+      id: row.id,
+      user_id: row.user_id,
+      company_id: row.company_id,
+      type: row.type as LGPDRequestType,
+      status: row.status as LGPDRequestStatus,
+      reason: row.reason,
+      description: row.description,
+      cpf_hash: row.cpf_hash,
+      pix_transaction_hash: row.pix_transaction_hash,
       created_at: new Date(row.created_at),
       response_due_at: new Date(row.response_due_at),
       completed_at: row.completed_at ? new Date(row.completed_at) : undefined
@@ -218,13 +240,16 @@ export class DatabaseManager {
     const row = await this.dbGet(`
       SELECT * FROM encrypted_lgpd_data 
       WHERE request_id = ?
-    `, [requestId]);
+    `, [requestId]) as Record<string, unknown>;
 
     if (!row) return null;
 
     return {
-      ...row,
-      created_at: new Date(row.created_at)
+      id: row.id as string,
+      request_id: row.request_id as string,
+      encrypted_blob: row.encrypted_blob as Buffer,
+      public_key_fingerprint: row.public_key_fingerprint as string,
+      created_at: new Date(row.created_at as string)
     };
   }
 
@@ -257,9 +282,9 @@ export class DatabaseManager {
     const createdAt = new Date();
 
     await this.dbRun(`
-      INSERT INTO users (id, email, password_hash, user_type, created_at)
-      VALUES (?, ?, ?, ?, ?)
-    `, [id, user.email, user.passwordHash, user.userType, createdAt.toISOString()]);
+      INSERT INTO users (id, email, password_hash, role, created_at, company_id)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `, [id, user.email, user.passwordHash, user.role, createdAt.toISOString(), user.companyId || null]);
 
     return id;
   }
@@ -269,16 +294,17 @@ export class DatabaseManager {
 
     const row = await this.dbGet(`
       SELECT * FROM users WHERE email = ? COLLATE NOCASE
-    `, [email]);
+    `, [email]) as Record<string, unknown>;
 
     if (!row) return null;
 
     return {
-      id: row.id,
-      email: row.email,
-      passwordHash: row.password_hash,
-      userType: row.user_type,
-      createdAt: new Date(row.created_at)
+      id: row.id as string,
+      email: row.email as string,
+      passwordHash: row.password_hash as string,
+      role: row.role as 'data_subject' | 'super_admin' | 'admin' | 'employee',
+      createdAt: new Date(row.created_at as string),
+      companyId: (row.company_id as string) || undefined
     };
   }
 
@@ -289,12 +315,13 @@ export class DatabaseManager {
       SELECT * FROM users ORDER BY created_at DESC
     `);
 
-    return rows.map(row => ({
-      id: row.id,
-      email: row.email,
-      passwordHash: row.password_hash,
-      userType: row.user_type,
-      createdAt: new Date(row.created_at)
+    return (rows as Record<string, unknown>[]).map((row: Record<string, unknown>) => ({
+      id: row.id as string,
+      email: row.email as string,
+      passwordHash: row.password_hash as string,
+      role: row.role as 'data_subject' | 'super_admin' | 'admin' | 'employee',
+      createdAt: new Date(row.created_at as string),
+      companyId: (row.company_id as string) || undefined
     }));
   }
 
@@ -308,13 +335,13 @@ export class DatabaseManager {
 
     const company = await this.dbGet(`
       SELECT public_key FROM companies WHERE id = ? AND is_active = 1
-    `, [companyId]);
+    `, [companyId]) as Record<string, unknown>;
 
     if (!company) {
       throw new Error('Company not found or inactive');
     }
 
-    return company.public_key;
+    return company.public_key as string;
   }
 
   async createDemoCompany(): Promise<string> {
@@ -326,9 +353,9 @@ export class DatabaseManager {
       // Check if company already exists with real keys
       const existing = await this.dbGet(`
         SELECT public_key FROM companies WHERE id = ?
-      `, [id]);
+      `, [id]) as Record<string, unknown>;
 
-      if (existing && existing.public_key !== 'DEMO_PUBLIC_KEY_TO_BE_REPLACED') {
+      if (existing && (existing.public_key as string) !== 'DEMO_PUBLIC_KEY_TO_BE_REPLACED') {
         return id; // Company already exists with real keys
       }
 
@@ -341,7 +368,9 @@ export class DatabaseManager {
         VALUES (?, ?, ?, ?)
       `, [id, 'TechCorp Ltd', publicKey, true]);
       
-      console.log('Demo company created with real encryption keys');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Demo company created with real encryption keys');
+      }
       return id;
     } catch (error) {
       console.error('Failed to create demo company:', error);

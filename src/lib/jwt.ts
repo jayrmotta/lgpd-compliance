@@ -7,7 +7,7 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
 export interface JWTPayload {
   userId: string;
   email: string;
-  userType: 'data_subject' | 'company_representative';
+  role: 'data_subject' | 'super_admin' | 'admin' | 'employee';
   iat?: number;
   exp?: number;
 }
@@ -16,9 +16,10 @@ export interface JWTPayload {
  * Generate a JWT token for authenticated user
  */
 export function generateToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): string {
+  // Use type assertion to handle JWT library typing issues
   return jwt.sign(payload, JWT_SECRET, {
-    expiresIn: JWT_EXPIRES_IN,
-  });
+    expiresIn: JWT_EXPIRES_IN
+  } as jwt.SignOptions);
 }
 
 /**
@@ -29,7 +30,10 @@ export function verifyToken(token: string): JWTPayload | null {
     const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
     return decoded;
   } catch (error) {
-    console.error('JWT verification failed:', error);
+    // Only log in development - production should handle auth failures silently for security
+    if (process.env.NODE_ENV === 'development') {
+      console.error('JWT verification failed:', error);
+    }
     return null;
   }
 }
@@ -55,6 +59,8 @@ export function refreshToken(currentToken: string): string | null {
   
   // Add a small delay to ensure the new token has a different issued time
   // Remove JWT-specific fields and generate new token
+  // Remove JWT-specific fields and keep only user data
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { iat: _iat, exp: _exp, ...userPayload } = payload;
   
   // In production, you might want to add additional validation here

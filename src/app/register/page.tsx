@@ -7,7 +7,7 @@ import { ERROR_MESSAGES, SUCCESS_MESSAGES, CLIENT_MESSAGES } from '@/lib/message
 interface FormData {
   email: string;
   password: string;
-  userType: 'data_subject' | 'company_representative';
+  userType: 'data_subject';
 }
 
 interface FormErrors {
@@ -161,22 +161,6 @@ export default function RegisterPage() {
             )}
           </div>
 
-          <div>
-            <label htmlFor="userType" className="block text-sm font-medium text-gray-300 mb-1">
-              Tipo de Usuário
-            </label>
-            <select
-              data-testid="userType-select"
-              id="userType"
-              name="userType"
-              value={formData.userType}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="data_subject">Titular de Dados</option>
-              <option value="company_representative">Representante da Empresa</option>
-            </select>
-          </div>
 
           <button
             data-testid="submit-button"

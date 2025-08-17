@@ -1,21 +1,12 @@
 import {
-  initializeDatabase,
-  createLGPDRequest,
-  storeEncryptedLGPDData,
-  getUserLGPDRequests,
-  getCompanyLGPDRequests,
-  getEncryptedLGPDData,
-  updateRequestStatus,
-  createDemoCompany,
-  closeDatabase,
   DatabaseManager,
-  type LGPDRequest,
   type LGPDRequestType,
   type LGPDRequestStatus
 } from './database-v2';
 import { hashData } from './crypto';
-import { promises as fs } from 'fs';
-import path from 'path';
+// File system imports commented out - not needed for in-memory tests
+// import { promises as fs } from 'fs';
+// import path from 'path';
 
 // Use in-memory database for testing
 process.env.DATABASE_PATH = ':memory:';
@@ -105,7 +96,7 @@ describe('Database Models - LGPD Compliance', () => {
       };
 
       // When: I submit the correction request
-      const requestId = await dbManager.createLGPDRequest(requestData);
+      await dbManager.createLGPDRequest(requestData);
 
       // Then: Request should be created
       const userRequests = await dbManager.getUserLGPDRequests('user-subject@example.com');
@@ -126,12 +117,8 @@ describe('Database Models - LGPD Compliance', () => {
         cpf_hash: cpfHash
       };
 
-      const before = new Date();
-      
       // When: Request is created
       await dbManager.createLGPDRequest(requestData);
-      
-      const after = new Date();
       const userRequests = await dbManager.getUserLGPDRequests('user-subject@example.com');
       const request = userRequests[0];
 
@@ -260,7 +247,7 @@ describe('Database Models - LGPD Compliance', () => {
       const companyId = 'COMPANY-DEMO-TECHCORP';
 
       // Create access request (2 days ago equivalent)
-      const accessRequestId = await dbManager.createLGPDRequest({
+      await dbManager.createLGPDRequest({
         user_id: userId,
         company_id: companyId,
         type: 'ACCESS',
@@ -271,7 +258,7 @@ describe('Database Models - LGPD Compliance', () => {
       });
 
       // Create deletion request 
-      const deletionRequestId = await dbManager.createLGPDRequest({
+      await dbManager.createLGPDRequest({
         user_id: userId,
         company_id: companyId,
         type: 'DELETION',
@@ -282,7 +269,7 @@ describe('Database Models - LGPD Compliance', () => {
       });
 
       // Create correction request
-      const correctionRequestId = await dbManager.createLGPDRequest({
+      await dbManager.createLGPDRequest({
         user_id: userId,
         company_id: companyId,
         type: 'CORRECTION',

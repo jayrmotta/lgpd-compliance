@@ -32,17 +32,49 @@ export function requireAuth(request: NextRequest): { user: JWTPayload } | NextRe
 }
 
 /**
- * Check if user has required user type
+ * Check if user has required role
  */
-export function requireUserType(
+export function requireRole(
   user: JWTPayload, 
-  requiredType: 'data_subject' | 'company_representative'
+  requiredRole: 'data_subject' | 'super_admin' | 'admin' | 'employee'
 ): NextResponse | null {
-  if (user.userType !== requiredType) {
+  if (user.role !== requiredRole) {
     return NextResponse.json(
       { 
         code: 'AUTH_INSUFFICIENT_PERMISSIONS', 
-        message: `This endpoint requires ${requiredType} access` 
+        message: `This endpoint requires ${requiredRole} access` 
+      },
+      { status: 403 }
+    );
+  }
+  return null;
+}
+
+/**
+ * Check if user has company access (admin or employee)
+ */
+export function requireCompanyAccess(user: JWTPayload): NextResponse | null {
+  if (!['admin', 'employee'].includes(user.role)) {
+    return NextResponse.json(
+      { 
+        code: 'AUTH_INSUFFICIENT_PERMISSIONS', 
+        message: 'This endpoint requires company access' 
+      },
+      { status: 403 }
+    );
+  }
+  return null;
+}
+
+/**
+ * Check if user is super admin
+ */
+export function requireSuperAdmin(user: JWTPayload): NextResponse | null {
+  if (user.role !== 'super_admin') {
+    return NextResponse.json(
+      { 
+        code: 'AUTH_INSUFFICIENT_PERMISSIONS', 
+        message: 'This endpoint requires super admin access' 
       },
       { status: 403 }
     );

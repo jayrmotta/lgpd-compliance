@@ -191,7 +191,7 @@ describe('Crypto Utils', () => {
   describe('integration test - client-side company flow', () => {
     it('should demonstrate secure encryption flow', async () => {
       // Get company public key (server-side safe)
-      const companyPublicKey = await getOrGenerateDemoPublicKey();
+      await getOrGenerateDemoPublicKey(); // Generate key for test setup
       
       // Note: In production, company saves private key in password manager
       

@@ -3,8 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { generateKeyPair, getKeyFingerprint } from '@/lib/crypto';
+import { withAuth, useAuth } from '@/lib/auth-client';
 
-export default function CompanySetupPage() {
+function CompanySetupPage() {
+  const { user, logout } = useAuth('admin');
   const router = useRouter();
   const [keyPair, setKeyPair] = useState<{ publicKey: string; secretKey: string } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -81,12 +83,23 @@ export default function CompanySetupPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <h1 className="text-xl font-semibold text-white">Configuração da Empresa - Chaves de Criptografia</h1>
-            <a 
-              href="/dashboard" 
-              className="text-blue-400 hover:text-blue-300"
-            >
-              Voltar ao Dashboard
-            </a>
+            <div className="flex items-center space-x-4">
+              <span className="text-gray-300 text-sm">
+                {user?.email}
+              </span>
+              <a 
+                href="/company-dashboard" 
+                className="text-blue-400 hover:text-blue-300"
+              >
+                Voltar ao Dashboard
+              </a>
+              <button
+                onClick={logout}
+                className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+              >
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -114,14 +127,14 @@ export default function CompanySetupPage() {
             <div className="bg-gray-800 shadow rounded-lg">
               <div className="px-4 py-5 sm:p-6">
                 <h2 className="text-lg font-medium text-white mb-6">
-                  Generate Company Encryption Keys
+                  Gerar Chaves de Criptografia da Empresa
                 </h2>
                 
                 <div className="text-center">
                   <p className="text-gray-300 mb-6">
-                    Click below to generate your company&apos;s encryption key pair. 
-                    This will create a public key (for receiving encrypted LGPD requests) 
-                    and a private key (for decrypting requests).
+                    Clique abaixo para gerar o par de chaves de criptografia da sua empresa.
+                    Isso criará uma chave pública (para receber solicitações LGPD criptografadas)
+                    e uma chave privada (para descriptografar solicitações).
                   </p>
                   
                   <button
@@ -129,7 +142,7 @@ export default function CompanySetupPage() {
                     disabled={isGenerating}
                     className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 disabled:opacity-50"
                   >
-                    {isGenerating ? 'Generating Keys...' : 'Generate Encryption Keys'}
+                    {isGenerating ? 'Gerando Chaves...' : 'Gerar Chaves de Criptografia'}
                   </button>
                 </div>
               </div>
@@ -143,7 +156,7 @@ export default function CompanySetupPage() {
               <div className="bg-gray-800 shadow rounded-lg">
                 <div className="px-4 py-5 sm:p-6">
                   <h2 className="text-lg font-medium text-white mb-6">
-                    🎉 Encryption Keys Generated Successfully
+                    🎉 Chaves de Criptografia Geradas com Sucesso
                   </h2>
                   
                   <div className="space-y-4">
@@ -212,12 +225,12 @@ export default function CompanySetupPage() {
               {showInstructions && (
                 <div className="bg-blue-900/30 border border-blue-700 rounded-lg">
                   <div className="px-4 py-5 sm:p-6">
-                    <h3 className="text-blue-300 font-semibold mb-4">📝 Next Steps</h3>
+                    <h3 className="text-blue-300 font-semibold mb-4">📝 Próximos Passos</h3>
                     <ol className="text-blue-200 space-y-2">
-                      <li>1. <strong>Save Private Key:</strong> Copy the private key and save it in your password manager</li>
-                      <li>2. <strong>Download Backup:</strong> Download the key file as backup</li>
-                      <li>3. <strong>Register Public Key:</strong> Register the public key with the platform</li>
-                      <li>4. <strong>Access Dashboard:</strong> Use your private key to decrypt LGPD requests</li>
+                      <li>1. <strong>Salvar Chave Privada:</strong> Copie a chave privada e salve em seu gerenciador de senhas</li>
+                      <li>2. <strong>Baixar Backup:</strong> Baixe o arquivo de chaves como backup</li>
+                      <li>3. <strong>Registrar Chave Pública:</strong> Registre a chave pública na plataforma</li>
+                      <li>4. <strong>Acessar Dashboard:</strong> Use sua chave privada para descriptografar solicitações LGPD</li>
                     </ol>
                     
                     <div className="flex space-x-4 mt-6">
@@ -259,3 +272,6 @@ export default function CompanySetupPage() {
     </div>
   );
 }
+
+// Export the component wrapped with authentication
+export default withAuth(CompanySetupPage, 'admin');

@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { authenticatedFetch } from '@/lib/auth-fetch';
 
-export default function LGPDRequestsPage() {
+function LGPDRequestsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -46,7 +46,7 @@ export default function LGPDRequestsPage() {
       setIsAuthenticated(true);
       
       // Check browser compatibility
-      const isCompatible = window.crypto && window.crypto.subtle;
+      const isCompatible = !!(window.crypto && window.crypto.subtle);
       setBrowserCompatible(isCompatible);
       
       // Pre-select request type from URL parameter
@@ -69,7 +69,7 @@ export default function LGPDRequestsPage() {
       }
       
       setIdentityVerified(true);
-      setIsMockVerification(false); // This is auto-completion, not mock
+      setUsedMockButton(false); // This is auto-completion, not mock
       setMockVerificationAttempted(false);
       setVerificationError('');
     }
@@ -138,7 +138,6 @@ export default function LGPDRequestsPage() {
     }
     
     setIdentityVerified(true);
-    setIsMockVerification(true);
     setUsedMockButton(true);
     setVerificationError('');
   };
@@ -157,7 +156,6 @@ export default function LGPDRequestsPage() {
     }
     
     setIdentityVerified(true);
-    setIsMockVerification(false);
     setUsedMockButton(false);
     setVerificationError('');
   };
@@ -468,5 +466,13 @@ export default function LGPDRequestsPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function LGPDRequestsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-900 flex items-center justify-center"><div className="text-white">Carregando...</div></div>}>
+      <LGPDRequestsContent />
+    </Suspense>
   );
 }

@@ -60,7 +60,10 @@ describe('Identity Verification API - Simplified from PIX Payment', () => {
     it('should detect development mode correctly', () => {
       // Given: The system is in development mode
       const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'development';
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: 'development',
+        configurable: true
+      });
       
       // When: Checking if development mode is enabled
       const isDevMode = isDevelopmentMode();
@@ -69,7 +72,10 @@ describe('Identity Verification API - Simplified from PIX Payment', () => {
       expect(isDevMode).toBe(true);
       
       // Restore environment
-      process.env.NODE_ENV = originalEnv;
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: originalEnv,
+        configurable: true
+      });
     });
 
     it('should handle mock verification with CPF entry', async () => {

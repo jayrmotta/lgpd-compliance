@@ -8,7 +8,7 @@ describe('/api/auth/password-reset', () => {
   const createMockRequest = (body: unknown): NextRequest => {
     return {
       json: jest.fn().mockResolvedValue(body)
-    } as NextRequest;
+    } as unknown as NextRequest;
   };
 
   it('should return success message for any email (security-safe)', async () => {

@@ -6,7 +6,7 @@ import { generateToken } from '@/lib/jwt';
 import { NextRequest } from 'next/server';
 
 // Mock NextRequest
-function createMockRequest(authHeader?: string) {
+function createMockRequest(authHeader?: string): NextRequest {
   const headers = new Headers();
   if (authHeader) {
     headers.set('Authorization', authHeader);
@@ -15,14 +15,14 @@ function createMockRequest(authHeader?: string) {
   return {
     headers,
     json: jest.fn(),
-  } as Partial<NextRequest>;
+  } as unknown as NextRequest;
 }
 
 describe('/api/auth/verify', () => {
   const mockUser = {
     userId: 'test-user-123',
     email: 'test@example.com',
-    userType: 'data_subject' as const
+    role: 'data_subject' as const
   };
 
   beforeEach(() => {
@@ -42,7 +42,7 @@ describe('/api/auth/verify', () => {
       expect(responseData.data.user).toEqual({
         userId: mockUser.userId,
         email: mockUser.email,
-        userType: mockUser.userType
+        role: mockUser.role
       });
     });
 
@@ -102,7 +102,7 @@ describe('/api/auth/verify', () => {
       expect(responseData.data.user).toEqual({
         userId: mockUser.userId,
         email: mockUser.email,
-        userType: mockUser.userType
+        role: mockUser.role
       });
     });
   });

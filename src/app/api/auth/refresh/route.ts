@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     const newToken = generateToken({
       userId: user.userId,
       email: user.email,
-      userType: user.userType
+      role: user.role
     });
     
     return NextResponse.json(
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
           user: {
             userId: user.userId,
             email: user.email,
-            userType: user.userType
+            role: user.role
           }
         }
       } as APIResponse,

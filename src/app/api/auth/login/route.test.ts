@@ -25,7 +25,7 @@ describe('/api/auth/login', () => {
   const createMockRequest = (body: unknown): NextRequest => {
     return {
       json: jest.fn().mockResolvedValue(body)
-    } as NextRequest;
+    } as unknown as NextRequest;
   };
 
   it('should return validation error for missing fields', async () => {
@@ -73,7 +73,7 @@ describe('/api/auth/login', () => {
     await addUser({
       email: 'user@example.com',
       passwordHash: hashedPassword,
-      userType: 'data_subject'
+      role: 'data_subject'
     });
 
     // Mock bcrypt compare to return false (wrong password)
@@ -98,7 +98,7 @@ describe('/api/auth/login', () => {
     await addUser({
       email: 'user@example.com',
       passwordHash: hashedPassword,
-      userType: 'data_subject'
+      role: 'data_subject'
     });
 
     // Mock bcrypt compare to return true (correct password)
@@ -118,7 +118,7 @@ describe('/api/auth/login', () => {
       user: {
         userId: expect.any(String),
         email: 'user@example.com',
-        userType: 'data_subject'
+        role: 'data_subject'
       }
     });
     // Check that JWT token is in Authorization header
@@ -132,7 +132,7 @@ describe('/api/auth/login', () => {
     await addUser({
       email: 'user@example.com',
       passwordHash: hashedPassword,
-      userType: 'data_subject'
+      role: 'data_subject'
     });
 
     // Mock bcrypt compare to return true
@@ -165,7 +165,7 @@ describe('/api/auth/login', () => {
     await addUser({
       email: 'user@example.com',
       passwordHash: hashedPassword,
-      userType: 'data_subject'
+      role: 'data_subject'
     });
 
     (compare as jest.Mock).mockResolvedValue(false);

@@ -65,10 +65,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let userPayload;
-    try {
-      userPayload = verifyToken(token);
-    } catch (error) {
+    const userPayload = verifyToken(token);
+    if (!userPayload) {
       return NextResponse.json(
         { code: 'INVALID_TOKEN' } as APIResponse,
         { status: 401 }
@@ -232,10 +230,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    let userPayload;
-    try {
-      userPayload = verifyToken(token);
-    } catch (error) {
+    const userPayload = verifyToken(token);
+    if (!userPayload) {
       return NextResponse.json(
         { code: 'INVALID_TOKEN' } as APIResponse,
         { status: 401 }

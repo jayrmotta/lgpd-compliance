@@ -182,10 +182,12 @@ export async function getOrGenerateDemoPublicKey(): Promise<string> {
     DEMO_COMPANY_PUBLIC_KEY.key = keys.publicKey;
     DEMO_COMPANY_PUBLIC_KEY.fingerprint = getKeyFingerprint(keys.publicKey);
     
-    console.log('Demo company public key generated:', {
-      fingerprint: DEMO_COMPANY_PUBLIC_KEY.fingerprint,
-      note: 'Private key must be generated and managed client-side'
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Demo company public key generated:', {
+        fingerprint: DEMO_COMPANY_PUBLIC_KEY.fingerprint,
+        note: 'Private key must be generated and managed client-side'
+      });
+    }
     
     return keys.publicKey;
   }

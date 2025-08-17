@@ -5,7 +5,7 @@ import { findUserByEmail, addUser } from '@/lib/user-storage';
 interface RegisterRequest {
   email: string;
   password: string;
-  userType: 'data_subject' | 'company_representative';
+  userType: 'data_subject' | 'company_representative' | 'super_admin';
 }
 
 interface APIResponse {
@@ -73,10 +73,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate userType
-    if (!['data_subject', 'company_representative'].includes(userType)) {
+    if (!['data_subject', 'company_representative', 'super_admin'].includes(userType)) {
       return NextResponse.json(
         { code: 'VALIDATION_USER_TYPE_INVALID' } as APIResponse,
         { status: 400 }
+      );
+    }
+
+    // Prevent self-registration for company representatives and super admins
+    // These roles must be created by authorized personnel only
+    if (userType === 'company_representative' || userType === 'super_admin') {
+      return NextResponse.json(
+        { code: 'REGISTRATION_COMPANY_REPRESENTATIVES_NOT_ALLOWED' } as APIResponse,
+        { status: 403 }
       );
     }
 
@@ -95,11 +104,11 @@ export async function POST(request: NextRequest) {
     // Hash password
     const passwordHash = await hash(password, 12);
 
-    // Create new user
+    // Create new user (only data_subject can self-register)
     const newUser = {
       email: email.toLowerCase(),
       passwordHash,
-      userType
+      role: 'data_subject' as const
     };
 
     await addUser(newUser);

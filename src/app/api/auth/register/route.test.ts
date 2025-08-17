@@ -14,7 +14,7 @@ describe('/api/auth/register', () => {
   const createMockRequest = (body: unknown): NextRequest => {
     return {
       json: jest.fn().mockResolvedValue(body)
-    } as NextRequest;
+    } as unknown as NextRequest;
   };
 
   it('should successfully register a new user', async () => {

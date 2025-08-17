@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
           user: {
             userId: user.userId,
             email: user.email,
-            userType: user.userType
+            role: user.role
           }
         }
       } as APIResponse,

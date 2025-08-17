@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { decryptSealedBox, getKeyFingerprint } from '@/lib/crypto';
+// import { decryptSealedBox, getKeyFingerprint } from '@/lib/crypto'; // Commented out - used in production for actual decryption
+import { withAuth, useAuth } from '@/lib/auth-client';
 
 interface EncryptedRequest {
   id: string;
@@ -23,7 +24,8 @@ interface DecryptedData {
   requestId: string;
 }
 
-export default function CompanyDashboardPage() {
+function CompanyDashboardPage() {
+  const { user, logout } = useAuth('admin'); // Can be changed to 'employee' if needed
   const [privateKey, setPrivateKey] = useState('');
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [requests, setRequests] = useState<EncryptedRequest[]>([]);
@@ -32,9 +34,10 @@ export default function CompanyDashboardPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // In production, check if user is company representative
-    fetchCompanyRequests();
-  }, []);
+    if (user) {
+      fetchCompanyRequests();
+    }
+  }, [user]);
 
   const fetchCompanyRequests = async () => {
     try {
@@ -160,6 +163,9 @@ export default function CompanyDashboardPage() {
               Company Dashboard - TechCorp Ltd
             </h1>
             <div className="flex items-center space-x-4">
+              <span className="text-gray-300 text-sm">
+                {user?.email}
+              </span>
               <a 
                 href="/company-setup" 
                 className="text-blue-400 hover:text-blue-300"
@@ -178,6 +184,12 @@ export default function CompanyDashboardPage() {
                   Bloquear Dashboard
                 </button>
               )}
+              <button
+                onClick={logout}
+                className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+              >
+                Logout
+              </button>
             </div>
           </div>
         </div>
@@ -339,3 +351,6 @@ export default function CompanyDashboardPage() {
     </div>
   );
 }
+
+// Export the component wrapped with authentication
+export default withAuth(CompanyDashboardPage, 'admin');

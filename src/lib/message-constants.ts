@@ -13,6 +13,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
   INVALID_CREDENTIALS: 'Email ou senha incorretos',
   USER_ALREADY_EXISTS: 'Usuário já existe com este email',
   USER_NOT_FOUND: 'Usuário não encontrado',
+  REGISTRATION_COMPANY_REPRESENTATIVES_NOT_ALLOWED: 'Representantes da empresa não podem se registrar. Entre em contato com o administrador da plataforma.',
   
   // Server errors
   SERVER_ERROR: 'Erro interno do servidor',

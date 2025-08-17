@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 interface FormData {
@@ -16,7 +16,7 @@ interface FormErrors {
 
 import { ERROR_MESSAGES, SUCCESS_MESSAGES, CLIENT_MESSAGES } from '@/lib/message-constants';
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [formData, setFormData] = useState<FormData>({
@@ -65,12 +65,6 @@ export default function LoginPage() {
       const endpoint = isPasswordResetMode ? '/api/auth/password-reset' : '/api/auth/login';
       const body = isPasswordResetMode ? { email: formData.email } : formData;
 
-      // DEBUG: Log the request
-      console.log('Login Request:', {
-        endpoint,
-        body: body,
-        bodyStringified: JSON.stringify(body)
-      });
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -86,14 +80,6 @@ export default function LoginPage() {
       const authHeader = response.headers.get('Authorization');
       const token = authHeader?.replace('Bearer ', '') || null;
       
-      // DEBUG: Log the response
-      console.log('Login API Response:', {
-        status: response.status,
-        ok: response.ok,
-        data: responseData,
-        authHeader: authHeader,
-        extractedToken: token ? `${token.substring(0, 20)}...` : null
-      });
 
       if (response.ok) {
         if (responseData.code === 'LOGIN_SUCCESS') {
@@ -249,5 +235,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-900 flex items-center justify-center"><div className="text-white">Carregando...</div></div>}>
+      <LoginContent />
+    </Suspense>
   );
 }
