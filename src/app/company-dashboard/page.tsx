@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { decryptSealedBox } from '@/lib/crypto';
 import { withAuth, useAuth } from '@/lib/auth-client';
 import { authenticatedFetch } from '@/lib/auth-fetch';
+import { getUIMessage, formatRequestType, formatRequestStatus } from '@/lib/translations';
 
 interface EncryptedRequest {
   id: string;
@@ -39,6 +40,7 @@ function CompanyDashboardPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [companyPublicKey, setCompanyPublicKey] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -55,11 +57,11 @@ function CompanyDashboardPage() {
         setCompanyPublicKey(data.data.publicKey);
       } else {
         console.error('Failed to fetch company metadata:', response.status);
-        setError('Falha ao carregar metadados da empresa');
+        setError(getUIMessage('error_fetch_metadata'));
       }
     } catch (error) {
       console.error('Failed to fetch company metadata:', error);
-      setError('Falha ao carregar metadados da empresa');
+      setError(getUIMessage('error_fetch_metadata'));
     }
   };
 
@@ -83,7 +85,7 @@ function CompanyDashboardPage() {
       setRequests(requests);
     } catch (error) {
       console.error('Failed to fetch requests:', error);
-      setError('Falha ao carregar solicitações LGPD: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      setError(getUIMessage('error_fetch_requests') + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -91,7 +93,7 @@ function CompanyDashboardPage() {
 
   const unlockDashboard = async () => {
     if (!privateKey) {
-      setError('Por favor, insira sua chave privada');
+      setError(getUIMessage('error_private_key_required'));
       return;
     }
 
@@ -101,13 +103,13 @@ function CompanyDashboardPage() {
 
       // Validate private key format (basic check)
       if (privateKey.length < 32) {
-        setError('Formato de chave privada inválido');
+        setError(getUIMessage('error_private_key_invalid_format'));
         return;
       }
 
       // Make sure we have the company public key
       if (!companyPublicKey) {
-        setError('Chave pública da empresa não encontrada. Por favor, recarregue a página.');
+        setError(getUIMessage('error_company_public_key_missing'));
         return;
       }
 
@@ -128,7 +130,7 @@ function CompanyDashboardPage() {
         try {
           const buffer = Buffer.from(convertedPrivateKey, 'base64');
           if (buffer.length !== 32) {
-            setError(`Formato de chave privada inválido - tamanho incorreto (${buffer.length} bytes, esperado 32)`);
+            setError(getUIMessage('error_private_key_invalid_size') + ` (${buffer.length} bytes, esperado 32)`);
             return;
           }
           // Convert Buffer to Uint8Array for libsodium
@@ -147,14 +149,14 @@ function CompanyDashboardPage() {
           }
         }
         if (secretKeyUint8.length !== sodium.crypto_box_SECRETKEYBYTES) {
-          setError('Formato de chave privada inválido - tamanho incorreto');
+          setError(getUIMessage('error_private_key_invalid_size'));
           return;
         }
         
         // Key validation successful - ready for decryption
         
               } catch {
-          setError('Formato de chave privada inválido - não é uma chave base64 válida');
+          setError(getUIMessage('error_private_key_invalid_base64'));
           return;
         }
 
@@ -182,7 +184,7 @@ function CompanyDashboardPage() {
           // Decrypt all requests using the validated key
           await decryptAllRequests(secretKeyUint8);
         } catch {
-          setError('Chave privada inválida - não foi possível descriptografar os dados');
+          setError(getUIMessage('error_private_key_decrypt_failed'));
           return;
         }
       } else {
@@ -192,7 +194,7 @@ function CompanyDashboardPage() {
       
     } catch (error) {
       console.error('Failed to unlock dashboard:', error);
-      setError('Chave privada inválida ou falha na descriptografia');
+      setError(getUIMessage('error_private_key_decrypt_failed'));
     } finally {
       setLoading(false);
     }
@@ -256,16 +258,6 @@ function CompanyDashboardPage() {
     }
   };
 
-  const formatRequestType = (type: string) => {
-    const types: Record<string, string> = {
-      'ACCESS': 'Acesso aos Dados',
-      'DELETION': 'Exclusão de Dados',
-      'CORRECTION': 'Correção de Dados',
-      'PORTABILITY': 'Portabilidade de Dados'
-    };
-    return types[type] || type;
-  };
-
   const convertUrlSafeBase64ToStandard = (urlSafeBase64: string): string => {
     // Clean the input - remove any whitespace and non-base64 characters
     const cleaned = urlSafeBase64.trim().replace(/\s/g, '');
@@ -304,11 +296,13 @@ function CompanyDashboardPage() {
       await fetchCompanyRequests();
       
       // Show success message
-      const statusMessage = newStatus === 'PROCESSING' ? 'em processamento' : 'concluída';
-      alert(`Solicitação marcada como ${statusMessage} com sucesso!`);
+      const statusMessage = newStatus === 'PROCESSING' ? getUIMessage('message_success_processing') : getUIMessage('message_success_completed');
+      setMessage({ type: 'success', text: statusMessage });
+      // Clear message after 3 seconds
+      setTimeout(() => setMessage(null), 3000);
     } catch (error) {
       console.error('Failed to update request status:', error);
-      alert('Erro ao atualizar status da solicitação: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      setMessage({ type: 'error', text: getUIMessage('message_error_update') + (error instanceof Error ? error.message : 'Unknown error') });
     }
   };
 
@@ -342,7 +336,7 @@ ${data.description}
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Failed to download request data:', error);
-      alert('Erro ao baixar dados da solicitação');
+      setMessage({ type: 'error', text: getUIMessage('message_error_download') });
     }
   };
 
@@ -352,7 +346,7 @@ ${data.description}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <h1 className="text-xl font-semibold text-white">
-              Company Dashboard
+              {getUIMessage('company_dashboard')}
             </h1>
             <div className="flex items-center space-x-4">
               <span className="text-gray-300 text-sm">
@@ -362,25 +356,25 @@ ${data.description}
                 href="/company-setup" 
                 className="text-blue-400 hover:text-blue-300"
               >
-                Key Setup
+                {getUIMessage('key_setup')}
               </a>
               {isUnlocked && (
-                <button
-                  onClick={() => {
-                    setIsUnlocked(false);
-                    setPrivateKey('');
-                    setDecryptedData({});
-                  }}
-                  className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
-                >
-                  Bloquear Dashboard
-                </button>
+                                  <button
+                    onClick={() => {
+                      setIsUnlocked(false);
+                      setPrivateKey('');
+                      setDecryptedData({});
+                    }}
+                    className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
+                  >
+                    {getUIMessage('dashboard_locked_button')}
+                  </button>
               )}
               <button
                 onClick={logout}
                 className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
               >
-                Logout
+                {getUIMessage('logout')}
               </button>
             </div>
           </div>
@@ -390,27 +384,49 @@ ${data.description}
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
 
+          {/* Message Display */}
+          {message && (
+            <div className={`mb-6 p-4 rounded-lg border ${
+              message.type === 'success' ? 'bg-green-900/30 border-green-700 text-green-200' :
+              message.type === 'error' ? 'bg-red-900/30 border-red-700 text-red-200' :
+              'bg-blue-900/30 border-blue-700 text-blue-200'
+            }`}>
+              <div className="flex items-center">
+                <span className="mr-2">
+                  {message.type === 'success' ? '✅' : message.type === 'error' ? '❌' : 'ℹ️'}
+                </span>
+                <span className="whitespace-pre-wrap">{message.text}</span>
+                <button
+                  onClick={() => setMessage(null)}
+                  className="ml-auto text-gray-400 hover:text-gray-200"
+                >
+                  {getUIMessage('close')}
+                </button>
+              </div>
+            </div>
+          )}
+
           {!isUnlocked && (
             <div className="max-w-md mx-auto">
               <div className="bg-gray-800 shadow rounded-lg">
                 <div className="px-4 py-5 sm:p-6">
                   <h2 className="text-lg font-medium text-white mb-6 text-center">
-                    🔐 Desbloquear Dashboard da Empresa
+                    {getUIMessage('dashboard_unlock_title')}
                   </h2>
                   
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Insira sua chave privada do gerenciador de senhas:
+                        {getUIMessage('dashboard_unlock_subtitle')}
                       </label>
                       <textarea
                         value={privateKey}
                         onChange={(e) => setPrivateKey(e.target.value)}
-                        placeholder="Cole sua chave privada aqui..."
+                        placeholder={getUIMessage('dashboard_unlock_placeholder')}
                         className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 h-24 resize-none"
                       />
                       <p className="text-gray-400 text-xs mt-1">
-                        Sua chave privada é processada localmente e nunca enviada aos nossos servidores.
+                        {getUIMessage('dashboard_unlock_note')}
                       </p>
                     </div>
 
@@ -425,7 +441,7 @@ ${data.description}
                       disabled={loading || !privateKey}
                       className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
                     >
-                      {loading ? 'Desbloqueando...' : 'Desbloquear Dashboard'}
+                      {loading ? getUIMessage('dashboard_unlocking') : getUIMessage('dashboard_unlock_button')}
                     </button>
                   </div>
                 </div>
@@ -441,9 +457,9 @@ ${data.description}
                 <div className="flex items-center">
                   <div className="text-green-400 text-xl mr-3">✅</div>
                   <div>
-                    <h3 className="text-green-300 font-semibold">Dashboard Desbloqueado</h3>
+                    <h3 className="text-green-300 font-semibold">{getUIMessage('dashboard_unlocked_title')}</h3>
                     <p className="text-green-200 text-sm">
-                      Sua chave privada é válida. Agora você pode descriptografar e visualizar solicitações LGPD.
+                      {getUIMessage('dashboard_unlocked_message')}
                     </p>
                   </div>
                 </div>
@@ -453,16 +469,16 @@ ${data.description}
               <div className="bg-gray-800 shadow rounded-lg">
                 <div className="px-4 py-5 sm:p-6">
                   <h2 className="text-lg font-medium text-white mb-6">
-                    LGPD Requests ({requests.length})
+                    {getUIMessage('requests_title')} ({requests.length})
                   </h2>
 
                   {loading ? (
                     <div className="text-center py-8">
-                      <p className="text-gray-300">Loading requests...</p>
+                      <p className="text-gray-300">{getUIMessage('requests_loading')}</p>
                     </div>
                   ) : requests.length === 0 ? (
                     <div className="text-center py-8">
-                      <p className="text-gray-300">No LGPD requests found.</p>
+                      <p className="text-gray-300">{getUIMessage('requests_empty')}</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -477,22 +493,22 @@ ${data.description}
                                   {formatRequestType(request.type)} - {request.id}
                                 </h3>
                                 <p className="text-gray-400 text-sm">
-                                  Submitted: {formatDate(request.created_at)} | 
-                                  Due: {formatDate(request.response_due_at)}
+                                  {getUIMessage('requests_submitted')}: {formatDate(request.created_at)} | 
+                                  {getUIMessage('requests_due')}: {formatDate(request.response_due_at)}
                                 </p>
                               </div>
                               <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(request.status)}`}>
-                                {request.status}
+                                {formatRequestStatus(request.status)}
                               </span>
                             </div>
 
                             {decrypted ? (
                               <div className="bg-gray-700 rounded-lg p-4 space-y-3">
-                                <h4 className="text-green-400 font-medium">🔓 Decrypted Content:</h4>
+                                <h4 className="text-green-400 font-medium">{getUIMessage('requests_decrypted_content')}</h4>
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                                   <div>
-                                    <span className="text-gray-300 font-medium">Email do Usuário:</span>
+                                    <span className="text-gray-300 font-medium">{getUIMessage('requests_user_email')}</span>
                                     <p className="text-white">{decrypted.userEmail}</p>
                                   </div>
                                   
@@ -502,12 +518,12 @@ ${data.description}
                                   </div>
                                   
                                   <div className="md:col-span-2">
-                                    <span className="text-gray-300 font-medium">Reason:</span>
+                                    <span className="text-gray-300 font-medium">{getUIMessage('requests_reason')}</span>
                                     <p className="text-white">{decrypted.reason}</p>
                                   </div>
                                   
                                   <div className="md:col-span-2">
-                                    <span className="text-gray-300 font-medium">Description:</span>
+                                    <span className="text-gray-300 font-medium">{getUIMessage('requests_description')}</span>
                                     <p className="text-white">{decrypted.description}</p>
                                   </div>
                                 </div>
@@ -518,7 +534,7 @@ ${data.description}
                                       onClick={() => updateRequestStatus(request.id, 'PROCESSING')}
                                       className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
                                     >
-                                      Processar Solicitação
+                                      {getUIMessage('requests_process_button')}
                                     </button>
                                   )}
                                   {request.status === 'PROCESSING' && (
@@ -526,20 +542,20 @@ ${data.description}
                                       onClick={() => updateRequestStatus(request.id, 'COMPLETED')}
                                       className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
                                     >
-                                      Marcar como Concluída
+                                      {getUIMessage('requests_complete_button')}
                                     </button>
                                   )}
                                   <button 
                                     onClick={() => downloadRequestData(request.id, decrypted)}
                                     className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-500"
                                   >
-                                    Baixar Dados
+                                    {getUIMessage('requests_download_button')}
                                   </button>
                                 </div>
                               </div>
                             ) : (
                               <div className="bg-red-900/20 border border-red-700 rounded-lg p-4">
-                                <p className="text-red-300">❌ Falha ao descriptografar esta solicitação</p>
+                                <p className="text-red-300">{getUIMessage('requests_decrypt_failed')}</p>
                               </div>
                             )}
                           </div>

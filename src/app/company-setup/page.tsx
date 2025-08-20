@@ -13,6 +13,7 @@ function CompanySetupPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [keySaved, setKeySaved] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
   const generateCompanyKeys = async () => {
     setIsGenerating(true);
@@ -23,7 +24,7 @@ function CompanySetupPage() {
       setShowInstructions(true);
     } catch (error) {
       console.error('Failed to generate keys:', error);
-      alert('Failed to generate encryption keys. Please try again.');
+      setMessage({ type: 'error', text: 'Failed to generate encryption keys. Please try again.' });
     } finally {
       setIsGenerating(false);
     }
@@ -31,7 +32,9 @@ function CompanySetupPage() {
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
-    alert(`${label} copied to clipboard!`);
+    setMessage({ type: 'success', text: `${label} copied to clipboard!` });
+    // Clear message after 3 seconds
+    setTimeout(() => setMessage(null), 3000);
   };
 
   const downloadKeys = () => {
@@ -81,16 +84,18 @@ function CompanySetupPage() {
       });
 
       if (response.ok) {
-        alert(`Empresa "${companyName}" configurada com sucesso! Você pode acessar o dashboard da empresa.`);
-        router.push('/company-dashboard');
+        setMessage({ type: 'success', text: `Empresa "${companyName}" configurada com sucesso! Redirecionando para o dashboard...` });
+        setTimeout(() => {
+          router.push('/company-dashboard');
+        }, 2000);
       } else {
         const error = await response.json();
         console.error('Company registration failed:', response.status, error);
-        alert(`Erro ao configurar empresa: ${error.message || 'Erro desconhecido'}`);
+        setMessage({ type: 'error', text: `Erro ao configurar empresa: ${error.message || 'Erro desconhecido'}` });
       }
     } catch (error) {
       console.error('Failed to register company:', error);
-      alert('Falha ao registrar empresa. Tente novamente.');
+      setMessage({ type: 'error', text: 'Falha ao registrar empresa. Tente novamente.' });
     }
   };
 
@@ -123,6 +128,28 @@ function CompanySetupPage() {
 
       <main className="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
+          
+          {/* Message Display */}
+          {message && (
+            <div className={`mb-6 p-4 rounded-lg border ${
+              message.type === 'success' ? 'bg-green-900/30 border-green-700 text-green-200' :
+              message.type === 'error' ? 'bg-red-900/30 border-red-700 text-red-200' :
+              'bg-blue-900/30 border-blue-700 text-blue-200'
+            }`}>
+              <div className="flex items-center">
+                <span className="mr-2">
+                  {message.type === 'success' ? '✅' : message.type === 'error' ? '❌' : 'ℹ️'}
+                </span>
+                <span className="whitespace-pre-wrap">{message.text}</span>
+                <button
+                  onClick={() => setMessage(null)}
+                  className="ml-auto text-gray-400 hover:text-gray-200"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
           
           {/* Security Notice */}
           <div className="bg-red-900/30 border border-red-700 rounded-lg p-6 mb-6">
