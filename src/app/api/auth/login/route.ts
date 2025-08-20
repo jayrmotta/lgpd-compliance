@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     response.headers.set('Authorization', `Bearer ${token}`);
     
     // Also set as a secure HTTP-only cookie for extra security
-    response.cookies.set('auth-token', token, {
+    response.cookies.set('authToken', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',

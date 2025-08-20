@@ -51,14 +51,14 @@ export function requireRole(
 }
 
 /**
- * Check if user has company access (admin or employee)
+ * Check if user has admin/employee access (single company deployment)
  */
 export function requireCompanyAccess(user: JWTPayload): NextResponse | null {
   if (!['admin', 'employee'].includes(user.role)) {
     return NextResponse.json(
       { 
         code: 'AUTH_INSUFFICIENT_PERMISSIONS', 
-        message: 'This endpoint requires company access' 
+        message: 'This endpoint requires admin or employee access' 
       },
       { status: 403 }
     );

@@ -5,9 +5,9 @@ import { verifyToken } from '@/lib/jwt'
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Protect company pages - require authentication and company_representative role
+  // Protect company pages - require authentication and admin/employee role
   if (pathname.startsWith('/company-dashboard') || pathname.startsWith('/company-setup')) {
-    const token = request.cookies.get('auth-token')?.value
+    const token = request.cookies.get('authToken')?.value
     
     if (!token) {
       // Redirect to login with return URL
@@ -45,7 +45,7 @@ export function middleware(request: NextRequest) {
 
   // Protect user pages - require authentication for data subjects or any authenticated user
   if (pathname.startsWith('/dashboard') || pathname.startsWith('/my-requests') || pathname.startsWith('/lgpd-requests')) {
-    const token = request.cookies.get('auth-token')?.value
+    const token = request.cookies.get('authToken')?.value
     
     if (!token) {
       // Redirect to login with return URL
@@ -76,7 +76,7 @@ export function middleware(request: NextRequest) {
 
   // Protect admin pages - require authentication and super_admin role
   if (pathname.startsWith('/admin')) {
-    const token = request.cookies.get('auth-token')?.value
+    const token = request.cookies.get('authToken')?.value
     
     if (!token) {
       // Redirect to login with return URL

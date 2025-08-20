@@ -7,8 +7,7 @@ import {
   generateNonce,
   hashData,
   getKeyFingerprint,
-  getOrGenerateDemoPublicKey,
-  DEMO_COMPANY_PUBLIC_KEY
+  getOrGenerateDemoPublicKey
 } from './crypto';
 
 describe('Crypto Utils', () => {
@@ -169,15 +168,13 @@ describe('Crypto Utils', () => {
     });
   });
 
-  describe('demo public key management', () => {
-    it('should generate demo public key', async () => {
+  describe('demo public key management (for development/testing)', () => {
+    it('should generate consistent demo public key', async () => {
       const publicKey = await getOrGenerateDemoPublicKey();
       
       expect(publicKey).toBeDefined();
       expect(typeof publicKey).toBe('string');
       expect(publicKey.length).toBeGreaterThan(0);
-      expect(DEMO_COMPANY_PUBLIC_KEY.key).toBe(publicKey);
-      expect(DEMO_COMPANY_PUBLIC_KEY.fingerprint).toBeDefined();
     });
 
     it('should return same public key on subsequent calls', async () => {

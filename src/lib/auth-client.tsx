@@ -17,7 +17,7 @@ export function useAuth(requiredRole?: 'data_subject' | 'super_admin' | 'admin' 
     const checkAuth = async () => {
       try {
         // Check if we have a token in localStorage or cookies
-        const token = localStorage.getItem('auth-token') || getCookie('auth-token');
+        const token = localStorage.getItem('authToken') || getCookie('authToken');
         
         if (!token) {
           if (requiredRole) {
@@ -37,8 +37,8 @@ export function useAuth(requiredRole?: 'data_subject' | 'super_admin' | 'admin' 
 
         if (!response.ok) {
           // Invalid token
-          localStorage.removeItem('auth-token');
-          document.cookie = 'auth-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+          localStorage.removeItem('authToken');
+          document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
           
           if (requiredRole) {
             router.push('/login?error=AUTH_INVALID');
@@ -75,8 +75,8 @@ export function useAuth(requiredRole?: 'data_subject' | 'super_admin' | 'admin' 
   }, [requiredRole, router]);
 
   const logout = () => {
-    localStorage.removeItem('auth-token');
-    document.cookie = 'auth-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    localStorage.removeItem('authToken');
+    document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     setUser(null);
     router.push('/login');
   };

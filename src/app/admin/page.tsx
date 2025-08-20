@@ -2,20 +2,20 @@
 
 import { useState } from 'react';
 import { ERROR_MESSAGES } from '@/lib/message-constants';
+import { withAuth, useAuth } from '@/lib/auth-client';
 
-interface CreateCompanyRepForm {
+interface CreateUserForm {
   email: string;
   password: string;
-  companyId: string;
   role: 'admin' | 'employee';
   generatePassword: boolean;
 }
 
-export default function AdminPage() {
-  const [form, setForm] = useState<CreateCompanyRepForm>({
+function AdminPage() {
+  const { logout } = useAuth(); // Middleware handles super_admin authorization
+  const [form, setForm] = useState<CreateUserForm>({
     email: '',
     password: '',
-    companyId: 'techcorp-ltd',
     role: 'employee',
     generatePassword: true // Default to auto-generate
   });
@@ -35,16 +35,15 @@ export default function AdminPage() {
     }
 
     try {
-      const response = await fetch('/api/admin/company-representatives', {
+      const response = await fetch('/api/admin/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth-token')}`
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         },
         body: JSON.stringify({
           email: form.email,
           password: form.generatePassword ? undefined : form.password,
-          companyId: form.companyId,
           role: form.role,
           generatePassword: form.generatePassword
         })
@@ -53,7 +52,7 @@ export default function AdminPage() {
       const data = await response.json();
 
       if (response.ok) {
-        let successText = 'Representante da empresa criado com sucesso!';
+        let successText = 'Usuário criado com sucesso!';
         if (data.data?.temporaryPassword) {
           successText += `\n\nSenha temporária: ${data.data.temporaryPassword}\n\nENVIE esta senha de forma segura para o usuário. Eles DEVEM alterar esta senha no primeiro login.`;
         }
@@ -61,7 +60,6 @@ export default function AdminPage() {
         setForm({
           email: '',
           password: '',
-          companyId: 'techcorp-ltd',
           role: 'employee',
           generatePassword: true
         });
@@ -70,7 +68,7 @@ export default function AdminPage() {
         setMessage({ type: 'error', text: errorMessage });
       }
     } catch (error) {
-      console.error('Error creating company representative:', error);
+      console.error('Error creating user:', error);
       setMessage({ type: 'error', text: 'Erro de conexão. Tente novamente.' });
     } finally {
       setLoading(false);
@@ -97,6 +95,12 @@ export default function AdminPage() {
               >
                 Dashboard
               </a>
+              <button
+                onClick={logout}
+                className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+              >
+                Logout
+              </button>
             </div>
           </div>
         </div>
@@ -112,17 +116,17 @@ export default function AdminPage() {
               <div>
                 <h3 className="text-yellow-300 font-semibold">Acesso de Administrador Obrigatório</h3>
                 <p className="text-yellow-200 text-sm mt-1">
-                  Esta página é apenas para operadores da plataforma. Representantes da empresa devem ser criados através desta interface.
+                  Esta página é apenas para operadores da plataforma. Usuários admin/funcionário devem ser criados através desta interface.
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Create Company Representative Form */}
+          {/* Create User Form */}
           <div className="bg-gray-800 shadow rounded-lg">
             <div className="px-4 py-5 sm:p-6">
               <h2 className="text-lg font-medium text-white mb-6">
-                Criar Representante da Empresa
+                Criar Usuário Admin/Funcionário
               </h2>
               
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -225,21 +229,6 @@ export default function AdminPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Company ID
-                  </label>
-                  <input
-                    type="text"
-                    name="companyId"
-                    value={form.companyId}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2"
-                    placeholder="techcorp-ltd"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
                     Função
                   </label>
                   <select
@@ -284,8 +273,8 @@ export default function AdminPage() {
               <ol className="text-blue-200 space-y-2 text-sm">
                 <li>1. Crie representantes da empresa usando este formulário</li>
                 <li>2. Envie as credenciais de login para o representante de forma segura</li>
-                <li>3. O representante pode então acessar /company-setup para gerar chaves de criptografia</li>
-                <li>4. O representante usa /company-dashboard para processar solicitações LGPD</li>
+                <li>3. O usuário pode então acessar /company-setup para gerar chaves de criptografia</li>
+                <li>4. O usuário admin/funcionário usa /company-dashboard para processar solicitações LGPD</li>
                 <li>5. Administradores podem criar funcionários adicionais através de sua própria interface</li>
               </ol>
             </div>
@@ -295,3 +284,6 @@ export default function AdminPage() {
     </div>
   );
 }
+
+// Export the component - middleware handles super_admin authorization
+export default withAuth(AdminPage);

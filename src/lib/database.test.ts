@@ -19,7 +19,7 @@ describe('Database Models - LGPD Compliance', () => {
     dbManager = new DatabaseManager();
     process.env.DATABASE_PATH = ':memory:';
     await dbManager.initialize();
-    await dbManager.createDemoCompany();
+    await dbManager.createCompany('Test Company', 'DEMO_PUBLIC_KEY_FOR_TESTS');
   });
 
   afterEach(async () => {
@@ -32,7 +32,7 @@ describe('Database Models - LGPD Compliance', () => {
       const cpfHash = await hashData('123.456.789-00');
       const requestData = {
         user_id: 'user-subject@example.com',
-        company_id: 'COMPANY-DEMO-TECHCORP',
+
         type: 'ACCESS' as LGPDRequestType,
         status: 'PENDING' as LGPDRequestStatus,
         reason: 'I want to see what personal data you have',
@@ -60,7 +60,7 @@ describe('Database Models - LGPD Compliance', () => {
       const cpfHash = await hashData('123.456.789-00');
       const requestData = {
         user_id: 'user-subject@example.com',
-        company_id: 'COMPANY-DEMO-TECHCORP',
+
         type: 'DELETION' as LGPDRequestType,
         status: 'PENDING' as LGPDRequestStatus,
         reason: 'I no longer want to use the service',
@@ -86,7 +86,7 @@ describe('Database Models - LGPD Compliance', () => {
       const cpfHash = await hashData('123.456.789-00');
       const requestData = {
         user_id: 'user-subject@example.com',
-        company_id: 'COMPANY-DEMO-TECHCORP',
+
         type: 'CORRECTION' as LGPDRequestType,
         status: 'PENDING' as LGPDRequestStatus,
         reason: 'My address information is incorrect',
@@ -109,7 +109,7 @@ describe('Database Models - LGPD Compliance', () => {
       const cpfHash = await hashData('123.456.789-00');
       const requestData = {
         user_id: 'user-subject@example.com',
-        company_id: 'COMPANY-DEMO-TECHCORP',
+
         type: 'ACCESS' as LGPDRequestType,
         status: 'PENDING' as LGPDRequestStatus,
         reason: 'Test request',
@@ -139,7 +139,7 @@ describe('Database Models - LGPD Compliance', () => {
       const cpfHash = await hashData('123.456.789-00');
       requestId = await dbManager.createLGPDRequest({
         user_id: 'user-subject@example.com',
-        company_id: 'COMPANY-DEMO-TECHCORP',
+
         type: 'ACCESS',
         status: 'PENDING',
         reason: 'Test request',
@@ -184,7 +184,7 @@ describe('Database Models - LGPD Compliance', () => {
       const cpfHash = await hashData('123.456.789-00');
       requestId = await dbManager.createLGPDRequest({
         user_id: 'user-subject@example.com',
-        company_id: 'COMPANY-DEMO-TECHCORP',
+
         type: 'ACCESS',
         status: 'PENDING',
         reason: 'Test request',
@@ -202,13 +202,12 @@ describe('Database Models - LGPD Compliance', () => {
         documents: ['CPF: 123.456.789-00']
       });
       const encryptedBlob = Buffer.from(sensitiveData, 'utf-8'); // In real app, this would be sealed box encrypted
-      const publicKeyFingerprint = 'ABCD1234';
+
 
       // When: Encrypted data is stored
       const encryptedId = await dbManager.storeEncryptedLGPDData(
         requestId,
-        encryptedBlob,
-        publicKeyFingerprint
+        encryptedBlob
       );
 
       // Then: Encrypted data should be stored with proper ID
@@ -217,16 +216,16 @@ describe('Database Models - LGPD Compliance', () => {
       // And: Encrypted data should be retrievable
       const retrievedData = await dbManager.getEncryptedLGPDData(requestId);
       expect(retrievedData).toBeDefined();
-      expect(retrievedData!.public_key_fingerprint).toBe(publicKeyFingerprint);
+      expect(retrievedData!.encrypted_blob).toEqual(encryptedBlob);
     });
 
     it('should not expose sensitive data in request metadata', async () => {
       // Given: Request contains sensitive information
       const sensitiveData = Buffer.from('SENSITIVE_PERSONAL_DATA', 'utf-8');
-      await dbManager.storeEncryptedLGPDData(requestId, sensitiveData, 'FINGERPRINT');
+      await dbManager.storeEncryptedLGPDData(requestId, sensitiveData);
 
       // When: Company views requests list
-      const companyRequests = await dbManager.getCompanyLGPDRequests('COMPANY-DEMO-TECHCORP');
+      const companyRequests = await dbManager.getAllLGPDRequests();
 
       // Then: Metadata should not contain sensitive data
       const request = companyRequests[0];
@@ -244,12 +243,12 @@ describe('Database Models - LGPD Compliance', () => {
       // Given: I have previously submitted requests (from lgpd_requests.feature line 70-74)
       const cpfHash = await hashData('123.456.789-00');
       const userId = 'user-subject@example.com';
-      const companyId = 'COMPANY-DEMO-TECHCORP';
+      // Single company deployment - no need for company ID
 
       // Create access request (2 days ago equivalent)
       await dbManager.createLGPDRequest({
         user_id: userId,
-        company_id: companyId,
+
         type: 'ACCESS',
         status: 'PENDING',
         reason: 'Access request',
@@ -260,7 +259,7 @@ describe('Database Models - LGPD Compliance', () => {
       // Create deletion request 
       await dbManager.createLGPDRequest({
         user_id: userId,
-        company_id: companyId,
+
         type: 'DELETION',
         status: 'PROCESSING',
         reason: 'Deletion request',
@@ -271,7 +270,7 @@ describe('Database Models - LGPD Compliance', () => {
       // Create correction request
       await dbManager.createLGPDRequest({
         user_id: userId,
-        company_id: companyId,
+
         type: 'CORRECTION',
         status: 'COMPLETED',
         reason: 'Correction request',
@@ -294,19 +293,28 @@ describe('Database Models - LGPD Compliance', () => {
     });
   });
 
-  describe('Demo Company Setup', () => {
-    it('should create demo company as required for Gherkin scenarios', async () => {
-      // Given: Gherkin scenarios reference "TechCorp Ltd"
-      // When: Demo company is created
-      const companyId = await dbManager.createDemoCompany();
+  describe('Company Setup', () => {
+    it('should have company available for single-company deployment', async () => {
+      // Given: Company is already created in beforeEach
+      // When: We check for company existence
+      const companyPublicKey = await dbManager.getCompanyPublicKey();
 
-      // Then: Company should exist
-      expect(companyId).toBe('COMPANY-DEMO-TECHCORP');
-
-      // And: Company should be able to receive requests
-      const companyRequests = await dbManager.getCompanyLGPDRequests(companyId);
+      // Then: Company should exist with valid public key
+      expect(companyPublicKey).toBe('DEMO_PUBLIC_KEY_FOR_TESTS');
+      
+      // And: Company should exist and accept requests
+      const companyRequests = await dbManager.getAllLGPDRequests();
       expect(companyRequests).toBeDefined();
       expect(Array.isArray(companyRequests)).toBe(true);
+    });
+    
+    it('should prevent multiple companies in single deployment', async () => {
+      // Given: Company already exists (from beforeEach)
+      
+      // When: Attempting to create second company
+      // Then: Should throw error
+      await expect(dbManager.createCompany('Second Company', 'KEY2'))
+        .rejects.toThrow('Company already exists - only one company allowed per deployment');
     });
   });
 });

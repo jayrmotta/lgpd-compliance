@@ -80,7 +80,7 @@ class SuperAdminCreator {
     console.log('  npm run create-super-admin\n');
     console.log('Security Notes:');
     console.log('  - Only one super admin account is allowed');
-    console.log('  - Super admin can create company representative accounts');
+    console.log('  - Super admin can create admin/employee accounts');
     console.log('  - Use a strong password and store it securely');
     console.log('  - ✅ Uses shared application code (zero duplication)');
   }
@@ -178,7 +178,7 @@ class SuperAdminCreator {
       if (!email || !password) {
         console.log('⚠️  Security Notice:');
         console.log('   - This script creates the initial platform operator account');
-        console.log('   - The super admin can create company representative accounts');
+        console.log('   - The super admin can create admin/employee accounts');
         console.log('   - Choose a strong password and store it securely');
         console.log('   - This account has full platform access\n');
 
@@ -266,7 +266,7 @@ class SuperAdminCreator {
       console.log('   1. Start the platform: npm run dev');
       console.log('   2. Login at http://localhost:3000/login');
       console.log('   3. Access admin panel at http://localhost:3000/admin');
-      console.log('   4. Create company representative accounts');
+      console.log('   4. Create admin/employee accounts for your company');
       console.log('\n🔒 Security reminder: Store your credentials securely!');
 
     } catch (error) {

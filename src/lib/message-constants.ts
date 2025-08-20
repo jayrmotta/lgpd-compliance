@@ -17,7 +17,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
   INVALID_CURRENT_PASSWORD: 'Senha atual incorreta',
   USER_ALREADY_EXISTS: 'Usuário já existe com este email',
   USER_NOT_FOUND: 'Usuário não encontrado',
-  REGISTRATION_COMPANY_REPRESENTATIVES_NOT_ALLOWED: 'Representantes da empresa não podem se registrar. Entre em contato com o administrador da plataforma.',
+
   VALIDATION_PASSWORDS_DONT_MATCH: 'Nova senha e confirmação não coincidem',
   NEW_PASSWORD_SAME_AS_CURRENT: 'A nova senha deve ser diferente da senha atual',
   PASSWORD_CHANGE_SUCCESS: 'Senha alterada com sucesso',

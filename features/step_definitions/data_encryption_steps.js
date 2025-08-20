@@ -153,16 +153,19 @@ Given('I have submitted a secure LGPD request', async function () {
 });
 
 Given('a company representative is logged in to the dashboard', async function () {
-  // Create and login company user
-  const companyEmail = `company+${this.testId}@example.com`;
+  // Note: In single-company deployment, admin/employee users must be created by super admin
+  // This step would normally require the super admin to create the user first
+  // For testing purposes, we'll use a pre-existing admin user
+  const companyEmail = `admin@testcompany.com`;
   
-  const response = await global.page.request.post('http://localhost:3000/api/auth/register', {
-    data: {
-      email: companyEmail,
-      password: 'CompanyPassword123!',
-      userType: 'company'
-    }
-  });
+  // Skip registration since admin users can't self-register
+  // const response = await global.page.request.post('http://localhost:3000/api/auth/register', {
+  //   data: {
+  //     email: companyEmail,
+  //     password: 'CompanyPassword123!',
+  //     userType: 'admin'  // Note: This would fail as admin users can't self-register
+  //   }
+  // });
   
   await global.page.goto('http://localhost:3000/login');
   await global.page.fill('[data-testid="email-input"]', companyEmail);

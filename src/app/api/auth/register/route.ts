@@ -5,7 +5,7 @@ import { findUserByEmail, addUser } from '@/lib/user-storage';
 interface RegisterRequest {
   email: string;
   password: string;
-  userType: 'data_subject' | 'company_representative' | 'super_admin';
+  userType: 'data_subject';
 }
 
 interface APIResponse {
@@ -72,22 +72,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate userType
-    if (!['data_subject', 'company_representative', 'super_admin'].includes(userType)) {
+    // Validate userType - only data_subject can self-register
+    if (userType !== 'data_subject') {
       return NextResponse.json(
         { code: 'VALIDATION_USER_TYPE_INVALID' } as APIResponse,
         { status: 400 }
       );
     }
 
-    // Prevent self-registration for company representatives and super admins
-    // These roles must be created by authorized personnel only
-    if (userType === 'company_representative' || userType === 'super_admin') {
-      return NextResponse.json(
-        { code: 'REGISTRATION_COMPANY_REPRESENTATIVES_NOT_ALLOWED' } as APIResponse,
-        { status: 403 }
-      );
-    }
+    // Note: admin, employee, and super_admin roles can only be created by existing super admins
+    // through the admin panel or scripts - never through self-registration
 
     // Check if user already exists
     const existingUser = await findUserByEmail(email);

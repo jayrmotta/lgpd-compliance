@@ -25,7 +25,7 @@ interface DecryptedData {
 }
 
 function CompanyDashboardPage() {
-  const { user, logout } = useAuth('admin'); // Can be changed to 'employee' if needed
+  const { user, logout } = useAuth(); // Middleware handles admin/employee authorization
   const [privateKey, setPrivateKey] = useState('');
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [requests, setRequests] = useState<EncryptedRequest[]>([]);
@@ -160,7 +160,7 @@ function CompanyDashboardPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <h1 className="text-xl font-semibold text-white">
-              Company Dashboard - TechCorp Ltd
+              Company Dashboard
             </h1>
             <div className="flex items-center space-x-4">
               <span className="text-gray-300 text-sm">
@@ -352,5 +352,5 @@ function CompanyDashboardPage() {
   );
 }
 
-// Export the component wrapped with authentication
-export default withAuth(CompanyDashboardPage, 'admin');
+// Export the component - middleware handles admin/employee authorization
+export default withAuth(CompanyDashboardPage);

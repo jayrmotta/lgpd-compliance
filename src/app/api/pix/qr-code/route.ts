@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
   try {
     // Verify authentication
     const authHeader = request.headers.get('authorization');
-    const token = authHeader?.replace('Bearer ', '') || request.cookies.get('auth-token')?.value;
+    const token = authHeader?.replace('Bearer ', '') || request.cookies.get('authToken')?.value;
     
     if (!token) {
       return NextResponse.json(

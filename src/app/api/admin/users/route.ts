@@ -3,10 +3,9 @@ import { hash } from 'bcryptjs';
 import { addUser, findUserByEmail } from '@/lib/user-storage';
 import { requireAuth, requireRole } from '@/lib/auth-middleware';
 
-interface CreateCompanyRepRequest {
+interface CreateUserRequest {
   email: string;
   password?: string; // Optional - will auto-generate if not provided
-  companyId?: string;
   role?: 'admin' | 'employee';
   generatePassword?: boolean; // Generate vs. manual entry - both are temporary
 }
@@ -58,13 +57,13 @@ export async function POST(request: NextRequest) {
     
     const { user } = authResult;
     
-    // Only super admins can create company representatives
+    // Only super admins can create admin/employee users
     const roleCheck = requireRole(user, 'super_admin');
     if (roleCheck) {
       return roleCheck;
     }
     
-    let body: CreateCompanyRepRequest;
+    let body: CreateUserRequest;
     try {
       body = await request.json();
     } catch {
@@ -74,7 +73,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { email, password, companyId, role = 'employee', generatePassword } = body;
+    const { email, password, role = 'employee', generatePassword } = body;
 
     // Validate required fields
     if (!email) {
@@ -123,12 +122,11 @@ export async function POST(request: NextRequest) {
     // Hash password
     const passwordHash = await hash(finalPassword, 12);
 
-    // Create new company representative (all admin-created accounts have temporary passwords)
+    // Create new user (all admin-created accounts have temporary passwords)
     const newUser = {
       email: email.toLowerCase(),
       passwordHash,
       role: role as 'admin' | 'employee',
-      companyId,
       passwordTemporary: true // Always true for admin-created accounts
     };
 
@@ -136,11 +134,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       { 
-        code: 'COMPANY_REPRESENTATIVE_CREATED_SUCCESS',
+        code: 'USER_CREATED_SUCCESS',
         data: {
           email: newUser.email,
           role: newUser.role,
-          companyId: newUser.companyId,
           temporaryPassword: finalPassword, // Always return the temporary password
           passwordTemporary: true
         }
@@ -149,7 +146,7 @@ export async function POST(request: NextRequest) {
     );
 
   } catch (error) {
-    console.error('Company representative creation error:', error);
+    console.error('User creation error:', error);
     return NextResponse.json(
       { code: 'SERVER_ERROR' } as APIResponse,
       { status: 500 }
@@ -157,7 +154,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Get list of company representatives (for management purposes)
+// Get list of users (for management purposes)
 export async function GET(request: NextRequest) {
   try {
     // Check authentication and authorization
@@ -178,16 +175,16 @@ export async function GET(request: NextRequest) {
     // For now, return a placeholder response
     return NextResponse.json(
       { 
-        code: 'COMPANY_REPRESENTATIVES_RETRIEVED',
+        code: 'USERS_RETRIEVED',
         data: {
-          message: 'Company representatives list - to be implemented with database integration'
+          message: 'Users list - to be implemented with database integration'
         }
       } as APIResponse,
       { status: 200 }
     );
 
   } catch (error) {
-    console.error('Error retrieving company representatives:', error);
+    console.error('Error retrieving users:', error);
     return NextResponse.json(
       { code: 'SERVER_ERROR' } as APIResponse,
       { status: 500 }

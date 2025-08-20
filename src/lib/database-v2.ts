@@ -9,7 +9,6 @@ export type LGPDRequestStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED
 export interface LGPDRequest {
   id: string;
   user_id: string;
-  company_id: string;
   type: LGPDRequestType;
   status: LGPDRequestStatus;
   reason: string;
@@ -25,7 +24,6 @@ export interface EncryptedLGPDData {
   id: string;
   request_id: string;
   encrypted_blob: Buffer; // Sealed box encrypted data
-  public_key_fingerprint: string; // Company's public key fingerprint
   created_at: Date;
 }
 
@@ -43,7 +41,6 @@ export interface User {
   passwordHash: string;
   role: 'data_subject' | 'super_admin' | 'admin' | 'employee';
   createdAt: Date;
-  companyId?: string;
   passwordTemporary?: boolean;
 }
 
@@ -88,7 +85,6 @@ export class DatabaseManager {
           password_hash TEXT NOT NULL,
           role TEXT NOT NULL CHECK(role IN ('data_subject', 'super_admin', 'admin', 'employee')),
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          company_id TEXT,
           password_temporary BOOLEAN DEFAULT 0
         )
       `);
@@ -109,7 +105,6 @@ export class DatabaseManager {
         CREATE TABLE IF NOT EXISTS lgpd_requests (
           id TEXT PRIMARY KEY,
           user_id TEXT NOT NULL,
-          company_id TEXT NOT NULL,
           type TEXT NOT NULL CHECK(type IN ('ACCESS', 'DELETION', 'CORRECTION', 'PORTABILITY')),
           status TEXT NOT NULL CHECK(status IN ('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED')),
           reason TEXT NOT NULL,
@@ -118,8 +113,7 @@ export class DatabaseManager {
           pix_transaction_hash TEXT,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           response_due_at DATETIME NOT NULL,
-          completed_at DATETIME,
-          FOREIGN KEY (company_id) REFERENCES companies (id)
+          completed_at DATETIME
         )
       `);
 
@@ -129,7 +123,6 @@ export class DatabaseManager {
           id TEXT PRIMARY KEY,
           request_id TEXT NOT NULL,
           encrypted_blob BLOB NOT NULL,
-          public_key_fingerprint TEXT NOT NULL,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (request_id) REFERENCES lgpd_requests (id)
         )
@@ -138,7 +131,6 @@ export class DatabaseManager {
       // Indexes for performance
       await this.dbRun('CREATE INDEX IF NOT EXISTS idx_users_email ON users (email)');
       await this.dbRun('CREATE INDEX IF NOT EXISTS idx_requests_user_id ON lgpd_requests (user_id)');
-      await this.dbRun('CREATE INDEX IF NOT EXISTS idx_requests_company_id ON lgpd_requests (company_id)');
       await this.dbRun('CREATE INDEX IF NOT EXISTS idx_requests_status ON lgpd_requests (status)');
       await this.dbRun('CREATE INDEX IF NOT EXISTS idx_encrypted_data_request_id ON encrypted_lgpd_data (request_id)');
     } catch (error) {
@@ -174,11 +166,11 @@ export class DatabaseManager {
 
     await this.dbRun(`
       INSERT INTO lgpd_requests (
-        id, user_id, company_id, type, status, reason, description, 
+        id, user_id, type, status, reason, description, 
         cpf_hash, pix_transaction_hash, created_at, response_due_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
-      id, request.user_id, request.company_id, request.type, request.status,
+      id, request.user_id, request.type, request.status,
       request.reason, request.description, request.cpf_hash, request.pix_transaction_hash,
       created_at.toISOString(), response_due_at.toISOString()
     ]);
@@ -188,17 +180,16 @@ export class DatabaseManager {
 
   async storeEncryptedLGPDData(
     requestId: string,
-    encryptedBlob: Buffer,
-    publicKeyFingerprint: string
+    encryptedBlob: Buffer
   ): Promise<string> {
     if (!this.dbRun) throw new Error('Database not initialized');
 
     const id = `ENC-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
     await this.dbRun(`
-      INSERT INTO encrypted_lgpd_data (id, request_id, encrypted_blob, public_key_fingerprint)
-      VALUES (?, ?, ?, ?)
-    `, [id, requestId, encryptedBlob, publicKeyFingerprint]);
+      INSERT INTO encrypted_lgpd_data (id, request_id, encrypted_blob)
+      VALUES (?, ?, ?)
+    `, [id, requestId, encryptedBlob]);
 
     return id;
   }
@@ -216,7 +207,7 @@ export class DatabaseManager {
     return (rows as any[]).map((row: Record<string, any>) => ({
       id: row.id,
       user_id: row.user_id,
-      company_id: row.company_id,
+
       type: row.type as LGPDRequestType,
       status: row.status as LGPDRequestStatus,
       reason: row.reason,
@@ -229,20 +220,19 @@ export class DatabaseManager {
     }));
   }
 
-  async getCompanyLGPDRequests(companyId: string): Promise<LGPDRequest[]> {
+  async getAllLGPDRequests(): Promise<LGPDRequest[]> {
     if (!this.dbAll) throw new Error('Database not initialized');
 
     const rows = await this.dbAll(`
       SELECT * FROM lgpd_requests 
-      WHERE company_id = ? 
       ORDER BY created_at DESC
-    `, [companyId]);
+    `, []);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (rows as any[]).map((row: Record<string, any>) => ({
       id: row.id,
       user_id: row.user_id,
-      company_id: row.company_id,
+
       type: row.type as LGPDRequestType,
       status: row.status as LGPDRequestStatus,
       reason: row.reason,
@@ -269,7 +259,7 @@ export class DatabaseManager {
       id: row.id as string,
       request_id: row.request_id as string,
       encrypted_blob: row.encrypted_blob as Buffer,
-      public_key_fingerprint: row.public_key_fingerprint as string,
+
       created_at: new Date(row.created_at as string)
     };
   }
@@ -303,9 +293,9 @@ export class DatabaseManager {
     const createdAt = new Date();
 
     await this.dbRun(`
-      INSERT INTO users (id, email, password_hash, role, created_at, company_id, password_temporary)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `, [id, user.email, user.passwordHash, user.role, createdAt.toISOString(), user.companyId || null, user.passwordTemporary ? 1 : 0]);
+      INSERT INTO users (id, email, password_hash, role, created_at, password_temporary)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `, [id, user.email, user.passwordHash, user.role, createdAt.toISOString(), user.passwordTemporary ? 1 : 0]);
 
     return id;
   }
@@ -315,9 +305,9 @@ export class DatabaseManager {
 
     await this.dbRun(`
       UPDATE users 
-      SET password_hash = ?, role = ?, company_id = ?, password_temporary = ?
+      SET password_hash = ?, role = ?, password_temporary = ?
       WHERE id = ?
-    `, [user.passwordHash, user.role, user.companyId || null, user.passwordTemporary ? 1 : 0, user.id]);
+    `, [user.passwordHash, user.role, user.passwordTemporary ? 1 : 0, user.id]);
   }
 
   async findUserByEmail(email: string): Promise<User | null> {
@@ -335,7 +325,7 @@ export class DatabaseManager {
       passwordHash: row.password_hash as string,
       role: row.role as 'data_subject' | 'super_admin' | 'admin' | 'employee',
       createdAt: new Date(row.created_at as string),
-      companyId: (row.company_id as string) || undefined,
+
       passwordTemporary: Boolean(row.password_temporary)
     };
   }
@@ -353,7 +343,7 @@ export class DatabaseManager {
       passwordHash: row.password_hash as string,
       role: row.role as 'data_subject' | 'super_admin' | 'admin' | 'employee',
       createdAt: new Date(row.created_at as string),
-      companyId: (row.company_id as string) || undefined,
+
       passwordTemporary: Boolean(row.password_temporary)
     }));
   }
@@ -363,52 +353,41 @@ export class DatabaseManager {
     await this.dbRun('DELETE FROM users');
   }
 
-  async getCompanyPublicKey(companyId: string): Promise<string> {
+  async getCompanyPublicKey(): Promise<string> {
     if (!this.dbGet) throw new Error('Database not initialized');
 
+    // For single company deployment, get the first active company
     const company = await this.dbGet(`
-      SELECT public_key FROM companies WHERE id = ? AND is_active = 1
-    `, [companyId]) as Record<string, unknown>;
+      SELECT public_key FROM companies WHERE is_active = 1 ORDER BY created_at ASC LIMIT 1
+    `, []) as Record<string, unknown>;
 
     if (!company) {
-      throw new Error('Company not found or inactive');
+      throw new Error('No active company found - company setup required');
     }
 
     return company.public_key as string;
   }
 
-  async createDemoCompany(): Promise<string> {
+  async createCompany(name: string, publicKey: string): Promise<string> {
     if (!this.dbRun || !this.dbGet) throw new Error('Database not initialized');
 
-    const id = 'COMPANY-DEMO-TECHCORP';
-    
-    try {
-      // Check if company already exists with real keys
-      const existing = await this.dbGet(`
-        SELECT public_key FROM companies WHERE id = ?
-      `, [id]) as Record<string, unknown>;
+    // Check if any company already exists (single company deployment)
+    const existing = await this.dbGet(`
+      SELECT id FROM companies WHERE is_active = 1 LIMIT 1
+    `, []) as Record<string, unknown>;
 
-      if (existing && (existing.public_key as string) !== 'DEMO_PUBLIC_KEY_TO_BE_REPLACED') {
-        return id; // Company already exists with real keys
-      }
-
-      // Get or generate public key (private key managed client-side only)
-      const { getOrGenerateDemoPublicKey } = await import('@/lib/crypto');
-      const publicKey = await getOrGenerateDemoPublicKey();
-      
-      await this.dbRun(`
-        INSERT OR REPLACE INTO companies (id, name, public_key, is_active)
-        VALUES (?, ?, ?, ?)
-      `, [id, 'TechCorp Ltd', publicKey, true]);
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Demo company created with real encryption keys');
-      }
-      return id;
-    } catch (error) {
-      console.error('Failed to create demo company:', error);
-      throw error;
+    if (existing) {
+      throw new Error('Company already exists - only one company allowed per deployment');
     }
+
+    const id = `COMPANY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    await this.dbRun(`
+      INSERT INTO companies (id, name, public_key, is_active)
+      VALUES (?, ?, ?, ?)
+    `, [id, name, publicKey, true]);
+    
+    return id;
   }
 
   async close(): Promise<void> {
@@ -440,15 +419,15 @@ export const databaseManager = new DatabaseManager();
 export const initializeDatabase = () => databaseManager.initialize();
 export const createLGPDRequest = (request: Omit<LGPDRequest, 'id' | 'created_at' | 'response_due_at'>) => 
   databaseManager.createLGPDRequest(request);
-export const storeEncryptedLGPDData = (requestId: string, encryptedBlob: Buffer, publicKeyFingerprint: string) =>
-  databaseManager.storeEncryptedLGPDData(requestId, encryptedBlob, publicKeyFingerprint);
+export const storeEncryptedLGPDData = (requestId: string, encryptedBlob: Buffer) =>
+  databaseManager.storeEncryptedLGPDData(requestId, encryptedBlob);
 export const getUserLGPDRequests = (userId: string) => databaseManager.getUserLGPDRequests(userId);
-export const getCompanyLGPDRequests = (companyId: string) => databaseManager.getCompanyLGPDRequests(companyId);
+export const getAllLGPDRequests = () => databaseManager.getAllLGPDRequests();
 export const getEncryptedLGPDData = (requestId: string) => databaseManager.getEncryptedLGPDData(requestId);
 export const updateRequestStatus = (requestId: string, status: LGPDRequestStatus, completedAt?: Date) =>
   databaseManager.updateRequestStatus(requestId, status, completedAt);
-export const createDemoCompany = () => databaseManager.createDemoCompany();
-export const getCompanyPublicKey = (companyId: string) => databaseManager.getCompanyPublicKey(companyId);
+export const createCompany = (name: string, publicKey: string) => databaseManager.createCompany(name, publicKey);
+export const getCompanyPublicKey = () => databaseManager.getCompanyPublicKey();
 export const closeDatabase = () => databaseManager.close();
 
 // User management functions

@@ -6,8 +6,9 @@ import { generateKeyPair, getKeyFingerprint } from '@/lib/crypto';
 import { withAuth, useAuth } from '@/lib/auth-client';
 
 function CompanySetupPage() {
-  const { user, logout } = useAuth('admin');
+  const { user, logout } = useAuth();
   const router = useRouter();
+  const [companyName, setCompanyName] = useState('');
   const [keyPair, setKeyPair] = useState<{ publicKey: string; secretKey: string } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [keySaved, setKeySaved] = useState(false);
@@ -36,7 +37,7 @@ function CompanySetupPage() {
     if (!keyPair) return;
 
     const keyData = {
-      companyName: 'TechCorp Ltd',
+      companyName: companyName.trim(),
       publicKey: keyPair.publicKey,
       privateKey: keyPair.secretKey,
       fingerprint: getKeyFingerprint(keyPair.publicKey),
@@ -51,7 +52,10 @@ function CompanySetupPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `techcorp-encryption-keys-${Date.now()}.json`;
+    const fileName = companyName.trim() 
+      ? `${companyName.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}-encryption-keys-${Date.now()}.json`
+      : `company-encryption-keys-${Date.now()}.json`;
+    a.download = fileName;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -59,18 +63,32 @@ function CompanySetupPage() {
   };
 
   const registerPublicKey = async () => {
-    if (!keyPair) return;
+    if (!keyPair || !companyName.trim()) return;
 
     try {
-      // In production, this would call an API to register the public key
-      // For demo, we'll simulate this
-      // Public key registered with fingerprint: ${getKeyFingerprint(keyPair.publicKey)}
-      
-      alert('Public key registered successfully! You can now access the company dashboard.');
-      router.push('/company-dashboard');
+      // Call API to register the company with public key
+      const response = await fetch('/api/company/setup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify({
+          companyName: companyName.trim(),
+          publicKey: keyPair.publicKey
+        })
+      });
+
+      if (response.ok) {
+        alert(`Empresa "${companyName}" configurada com sucesso! Você pode acessar o dashboard da empresa.`);
+        router.push('/company-dashboard');
+      } else {
+        const error = await response.json();
+        alert(`Erro ao configurar empresa: ${error.message || 'Erro desconhecido'}`);
+      }
     } catch (error) {
-      console.error('Failed to register public key:', error);
-      alert('Failed to register public key. Please try again.');
+      console.error('Failed to register company:', error);
+      alert('Falha ao registrar empresa. Tente novamente.');
     }
   };
 
@@ -124,23 +142,42 @@ function CompanySetupPage() {
             <div className="bg-gray-800 shadow rounded-lg">
               <div className="px-4 py-5 sm:p-6">
                 <h2 className="text-lg font-medium text-white mb-6">
-                  Gerar Chaves de Criptografia da Empresa
+                  Configuração da Empresa
                 </h2>
                 
-                <div className="text-center">
-                  <p className="text-gray-300 mb-6">
-                    Clique abaixo para gerar o par de chaves de criptografia da sua empresa.
-                    Isso criará uma chave pública (para receber solicitações LGPD criptografadas)
-                    e uma chave privada (para descriptografar solicitações).
-                  </p>
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Nome da Empresa *
+                    </label>
+                    <input
+                      type="text"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      required
+                      className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2"
+                      placeholder="Ex: TechCorp Ltda, Acme Solutions Inc."
+                    />
+                    <p className="text-gray-400 text-xs mt-1">
+                      Este nome será usado em toda a plataforma e nos arquivos de chaves.
+                    </p>
+                  </div>
                   
-                  <button
-                    onClick={generateCompanyKeys}
-                    disabled={isGenerating}
-                    className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    {isGenerating ? 'Gerando Chaves...' : 'Gerar Chaves de Criptografia'}
-                  </button>
+                  <div className="text-center">
+                    <p className="text-gray-300 mb-6">
+                      Após informar o nome da empresa, clique abaixo para gerar o par de chaves de criptografia.
+                      Isso criará uma chave pública (para receber solicitações LGPD criptografadas)
+                      e uma chave privada (para descriptografar solicitações).
+                    </p>
+                    
+                    <button
+                      onClick={generateCompanyKeys}
+                      disabled={isGenerating || !companyName.trim()}
+                      className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {isGenerating ? 'Gerando Chaves...' : 'Gerar Chaves de Criptografia'}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -270,5 +307,5 @@ function CompanySetupPage() {
   );
 }
 
-// Export the component wrapped with authentication
-export default withAuth(CompanySetupPage, 'admin');
+// Export the component - middleware handles admin/employee authorization
+export default withAuth(CompanySetupPage);

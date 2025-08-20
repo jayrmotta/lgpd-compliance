@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
   try {
     // Verify authentication
     const authHeader = request.headers.get('authorization');
-    const token = authHeader?.replace('Bearer ', '') || request.cookies.get('auth-token')?.value;
+    const token = authHeader?.replace('Bearer ', '') || request.cookies.get('authToken')?.value;
     
     if (!token) {
       return NextResponse.json(
@@ -111,16 +111,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Initialize database and check for properly configured company
-    const companyId = 'COMPANY-DEMO-TECHCORP';
     let companyPublicKey: string;
     try {
       await initializeDatabase();
       
-      // Check if company exists and is properly configured (not using demo keys)
-      companyPublicKey = await getCompanyPublicKey(companyId);
+      // Get the single company's public key (single-company deployment)
+      companyPublicKey = await getCompanyPublicKey();
       
-      // Validate that it's not a placeholder key
-      if (companyPublicKey === 'DEMO_PUBLIC_KEY_TO_BE_REPLACED' || !companyPublicKey) {
+      // Validate that company is properly configured
+      if (!companyPublicKey) {
         return NextResponse.json(
           { code: 'COMPANY_SETUP_REQUIRED' } as APIResponse,
           { status: 400 }
@@ -139,7 +138,6 @@ export async function POST(request: NextRequest) {
     try {
       requestId = await createLGPDRequest({
         user_id: userPayload.userId,
-        company_id: companyId,
         type: dbType,
         status: 'PENDING',
         reason: `[ENCRYPTED] ${dbType} request`, // Generic reason for metadata
@@ -174,8 +172,7 @@ export async function POST(request: NextRequest) {
       // Store encrypted data
       await storeEncryptedLGPDData(
         requestId,
-        Buffer.from(encryptedBlob, 'base64'),
-        getKeyFingerprint(companyPublicKey)
+        Buffer.from(encryptedBlob, 'base64')
       );
 
       return NextResponse.json(
@@ -219,7 +216,7 @@ export async function GET(request: NextRequest) {
   try {
     // Verify authentication
     const authHeader = request.headers.get('authorization');
-    const token = authHeader?.replace('Bearer ', '') || request.cookies.get('auth-token')?.value;
+    const token = authHeader?.replace('Bearer ', '') || request.cookies.get('authToken')?.value;
     
     if (!token) {
       return NextResponse.json(
