@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-// import { decryptSealedBox, getKeyFingerprint } from '@/lib/crypto'; // Commented out - used in production for actual decryption
+import { decryptSealedBox } from '@/lib/crypto';
 import { withAuth, useAuth } from '@/lib/auth-client';
+import { authenticatedFetch } from '@/lib/auth-fetch';
 
 interface EncryptedRequest {
   id: string;
@@ -12,6 +13,11 @@ interface EncryptedRequest {
   response_due_at: string;
   user_id: string;
   encrypted_data?: string;
+  reason?: string;
+  description?: string;
+  cpf_hash?: string;
+  pix_transaction_hash?: string;
+  completed_at?: string;
 }
 
 interface DecryptedData {
@@ -32,34 +38,52 @@ function CompanyDashboardPage() {
   const [decryptedData, setDecryptedData] = useState<Record<string, DecryptedData>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [companyPublicKey, setCompanyPublicKey] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
+      fetchCompanyMetadata();
       fetchCompanyRequests();
     }
   }, [user]);
 
+  const fetchCompanyMetadata = async () => {
+    try {
+      const response = await authenticatedFetch('/api/company/metadata');
+      if (response.ok) {
+        const data = await response.json();
+        setCompanyPublicKey(data.data.publicKey);
+      } else {
+        console.error('Failed to fetch company metadata:', response.status);
+        setError('Falha ao carregar metadados da empresa');
+      }
+    } catch (error) {
+      console.error('Failed to fetch company metadata:', error);
+      setError('Falha ao carregar metadados da empresa');
+    }
+  };
+
   const fetchCompanyRequests = async () => {
     try {
       setLoading(true);
+      setError('');
       
-      // Mock API call - in production, this would fetch company's LGPD requests
-      const mockRequests: EncryptedRequest[] = [
-        {
-          id: 'REQ-1755288038734-b9kyt20gt',
-          type: 'ACCESS',
-          status: 'PENDING',
-          created_at: '2025-08-15T20:00:38.734Z',
-          response_due_at: '2025-08-30T20:00:38.734Z',
-          user_id: 'USER-1755287987646-3q9mdywad',
-          encrypted_data: 'mock_encrypted_blob' // In production, fetch from encrypted_lgpd_data table
-        }
-      ];
+      // Fetch real company LGPD requests from API
+      const response = await authenticatedFetch('/api/company/lgpd-requests');
       
-      setRequests(mockRequests);
+      if (!response.ok) {
+        const data = await response.json();
+        console.error('Failed to fetch requests:', response.status, data);
+        throw new Error(data.message || 'Failed to fetch requests');
+      }
+      
+      const data = await response.json();
+      const requests = data.data.requests || [];
+      
+      setRequests(requests);
     } catch (error) {
       console.error('Failed to fetch requests:', error);
-      setError('Falha ao carregar solicitações LGPD');
+      setError('Falha ao carregar solicitações LGPD: ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -81,12 +105,90 @@ function CompanyDashboardPage() {
         return;
       }
 
-      // In production, you might derive public key from private key to validate
-      // For demo, we'll assume the key is valid
-      setIsUnlocked(true);
+      // Make sure we have the company public key
+      if (!companyPublicKey) {
+        setError('Chave pública da empresa não encontrada. Por favor, recarregue a página.');
+        return;
+      }
+
+      // Validate and convert private key format
+      let convertedPrivateKey: string;
+      let secretKeyUint8: Uint8Array;
+      try {
+        // Import the sodium library for validation
+        const { default: sodium } = await import('libsodium-wrappers');
+        await sodium.ready;
+        
+        // Convert URL-safe base64 to standard base64 if needed
+        convertedPrivateKey = convertUrlSafeBase64ToStandard(privateKey.trim());
+        
+
+        
+        // Test if the private key is valid base64 using native JavaScript first
+        try {
+          const buffer = Buffer.from(convertedPrivateKey, 'base64');
+          if (buffer.length !== 32) {
+            setError(`Formato de chave privada inválido - tamanho incorreto (${buffer.length} bytes, esperado 32)`);
+            return;
+          }
+          // Convert Buffer to Uint8Array for libsodium
+          secretKeyUint8 = new Uint8Array(buffer);
+
+        } catch (bufferError) {
+          console.error('Failed to decode with Buffer:', bufferError);
+          // Fallback to libsodium
+          try {
+            secretKeyUint8 = sodium.from_base64(convertedPrivateKey);
+
+          } catch (sodiumError) {
+            console.error('Failed to decode with libsodium:', sodiumError);
+            setError('Formato de chave privada inválido - não é uma chave base64 válida');
+            return;
+          }
+        }
+        if (secretKeyUint8.length !== sodium.crypto_box_SECRETKEYBYTES) {
+          setError('Formato de chave privada inválido - tamanho incorreto');
+          return;
+        }
+        
+        // Key validation successful - ready for decryption
+        
+              } catch {
+          setError('Formato de chave privada inválido - não é uma chave base64 válida');
+          return;
+        }
+
+      // Try to decrypt one request to validate the key (if requests exist)
+      const testRequest = requests.find(r => r.encrypted_data);
       
-      // Simulate decryption of requests
-      await decryptAllRequests();
+      if (testRequest && testRequest.encrypted_data) {
+        try {
+          const decryptedTestData = await decryptSealedBox(
+            testRequest.encrypted_data,
+            companyPublicKey,
+            secretKeyUint8
+          );
+          
+          // Try to parse the decrypted data to ensure it's valid JSON
+          try {
+            JSON.parse(decryptedTestData);
+          } catch (parseError) {
+            console.warn('Decrypted data is not valid JSON:', parseError);
+          }
+          
+          // If successful, mark dashboard as unlocked
+          setIsUnlocked(true);
+          
+          // Decrypt all requests using the validated key
+          await decryptAllRequests(secretKeyUint8);
+        } catch {
+          setError('Chave privada inválida - não foi possível descriptografar os dados');
+          return;
+        }
+      } else {
+        // No encrypted data to test, but private key format is valid
+        setIsUnlocked(true);
+      }
       
     } catch (error) {
       console.error('Failed to unlock dashboard:', error);
@@ -96,28 +198,38 @@ function CompanyDashboardPage() {
     }
   };
 
-  const decryptAllRequests = async () => {
+  const decryptAllRequests = async (validatedPrivateKey: Uint8Array) => {
     const decrypted: Record<string, DecryptedData> = {};
     
     for (const request of requests) {
       try {
         if (request.encrypted_data) {
-          // In production, fetch actual encrypted blob from database
-          // For demo, create sample encrypted data
-          const sampleData: DecryptedData = {
-            reason: 'I want to see my sensitive personal data',
-            description: 'Please provide all my personal information including my full name, address, and any behavioral data you have collected about me',
-            cpf: '123.456.789-00',
-            type: request.type,
-            userEmail: 'encrypted-test@lgpd.com',
-            timestamp: request.created_at,
-            requestId: request.id
-          };
+          // Decrypt the sealed box data
+          // Note: We need the public key that was used for encryption
+          // This should be retrieved from the company setup or stored configuration
           
-          decrypted[request.id] = sampleData;
+          try {
+            // Use the company public key we fetched earlier
+            if (!companyPublicKey) {
+              throw new Error('Company public key not available');
+            }
+            
+            // Use the validated key that was passed to this function
+            const decryptedJson = await decryptSealedBox(
+              request.encrypted_data,
+              companyPublicKey,
+              validatedPrivateKey // Use the validated Uint8Array key
+            );
+            
+            const decryptedData = JSON.parse(decryptedJson) as DecryptedData;
+            decrypted[request.id] = decryptedData;
+          } catch (decryptError) {
+            console.error(`Decryption failed for request ${request.id}:`, decryptError);
+            // Continue with other requests
+          }
         }
       } catch (error) {
-        console.error(`Failed to decrypt request ${request.id}:`, error);
+        console.error(`Failed to process request ${request.id}:`, error);
       }
     }
     
@@ -152,6 +264,86 @@ function CompanyDashboardPage() {
       'PORTABILITY': 'Portabilidade de Dados'
     };
     return types[type] || type;
+  };
+
+  const convertUrlSafeBase64ToStandard = (urlSafeBase64: string): string => {
+    // Clean the input - remove any whitespace and non-base64 characters
+    const cleaned = urlSafeBase64.trim().replace(/\s/g, '');
+    
+    // Convert URL-safe base64 to standard base64
+    let standardBase64 = cleaned.replace(/-/g, '+').replace(/_/g, '/');
+    
+    // Add padding if needed
+    const padding = standardBase64.length % 4;
+    if (padding > 0) {
+      standardBase64 += '='.repeat(4 - padding);
+    }
+    
+    return standardBase64;
+  };
+
+  const updateRequestStatus = async (requestId: string, newStatus: string) => {
+    try {
+      const response = await authenticatedFetch('/api/company/lgpd-requests', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          requestId,
+          status: newStatus
+        })
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Failed to update status');
+      }
+
+      // Refresh the requests list
+      await fetchCompanyRequests();
+      
+      // Show success message
+      const statusMessage = newStatus === 'PROCESSING' ? 'em processamento' : 'concluída';
+      alert(`Solicitação marcada como ${statusMessage} com sucesso!`);
+    } catch (error) {
+      console.error('Failed to update request status:', error);
+      alert('Erro ao atualizar status da solicitação: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
+  };
+
+  const downloadRequestData = (requestId: string, data: DecryptedData) => {
+    try {
+      // Create a formatted text file with the decrypted data
+      const content = `LGPD Request Data
+==================
+Request ID: ${data.requestId}
+Type: ${formatRequestType(data.type)}
+Date: ${formatDate(data.timestamp)}
+User Email: ${data.userEmail}
+CPF: ${data.cpf}
+
+Reason:
+${data.reason}
+
+Description:
+${data.description}
+`;
+
+      // Create a blob and download it
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `lgpd-request-${requestId}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to download request data:', error);
+      alert('Erro ao baixar dados da solicitação');
+    }
   };
 
   return (
@@ -321,13 +513,26 @@ function CompanyDashboardPage() {
                                 </div>
 
                                 <div className="flex space-x-2 pt-2">
-                                  <button className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
-                                    Processar Solicitação
-                                  </button>
-                                  <button className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
-                                    Marcar como Concluída
-                                  </button>
-                                  <button className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-500">
+                                  {request.status === 'PENDING' && (
+                                    <button 
+                                      onClick={() => updateRequestStatus(request.id, 'PROCESSING')}
+                                      className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
+                                    >
+                                      Processar Solicitação
+                                    </button>
+                                  )}
+                                  {request.status === 'PROCESSING' && (
+                                    <button 
+                                      onClick={() => updateRequestStatus(request.id, 'COMPLETED')}
+                                      className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
+                                    >
+                                      Marcar como Concluída
+                                    </button>
+                                  )}
+                                  <button 
+                                    onClick={() => downloadRequestData(request.id, decrypted)}
+                                    className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-500"
+                                  >
                                     Baixar Dados
                                   </button>
                                 </div>

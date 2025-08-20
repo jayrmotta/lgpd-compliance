@@ -169,10 +169,10 @@ export async function POST(request: NextRequest) {
         companyPublicKey
       );
 
-      // Store encrypted data
+      // Store encrypted data (encryptedBlob is already URL-safe base64 from libsodium)
       await storeEncryptedLGPDData(
         requestId,
-        Buffer.from(encryptedBlob, 'base64')
+        Buffer.from(encryptedBlob, 'base64url') // Use base64url to handle URL-safe format
       );
 
       return NextResponse.json(

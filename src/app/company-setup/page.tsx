@@ -16,6 +16,7 @@ function CompanySetupPage() {
 
   const generateCompanyKeys = async () => {
     setIsGenerating(true);
+    
     try {
       const keys = await generateKeyPair();
       setKeyPair(keys);
@@ -84,6 +85,7 @@ function CompanySetupPage() {
         router.push('/company-dashboard');
       } else {
         const error = await response.json();
+        console.error('Company registration failed:', response.status, error);
         alert(`Erro ao configurar empresa: ${error.message || 'Erro desconhecido'}`);
       }
     } catch (error) {

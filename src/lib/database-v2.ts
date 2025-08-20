@@ -54,8 +54,25 @@ export class DatabaseManager {
   private dbAll: ((sql: string, params?: unknown[]) => Promise<unknown[]>) | null = null;
 
   async initialize(): Promise<void> {
+    // Skip initialization if database is already connected
+    if (this.db && this.dbRun && this.dbGet && this.dbAll) {
+      // Test if connection is still alive
+      try {
+        await this.dbGet('SELECT 1', []);
+        return; // Database is already initialized and working
+      } catch {
+        // Connection is dead, proceed with re-initialization
+        console.log('Database connection lost, reinitializing...');
+      }
+    }
+
+    // Close existing connection if any
     if (this.db) {
-      await this.close();
+      try {
+        await this.close();
+      } catch (error) {
+        console.error('Error closing previous database connection:', error);
+      }
     }
 
     const dbPath = process.env.DATABASE_PATH || path.join(process.cwd(), 'lgpd_compliance.db');
@@ -207,7 +224,6 @@ export class DatabaseManager {
     return (rows as any[]).map((row: Record<string, any>) => ({
       id: row.id,
       user_id: row.user_id,
-
       type: row.type as LGPDRequestType,
       status: row.status as LGPDRequestStatus,
       reason: row.reason,
@@ -232,7 +248,6 @@ export class DatabaseManager {
     return (rows as any[]).map((row: Record<string, any>) => ({
       id: row.id,
       user_id: row.user_id,
-
       type: row.type as LGPDRequestType,
       status: row.status as LGPDRequestStatus,
       reason: row.reason,
@@ -368,6 +383,28 @@ export class DatabaseManager {
     return company.public_key as string;
   }
 
+  async getCompanyMetadata(): Promise<Company | null> {
+    if (!this.dbGet) throw new Error('Database not initialized');
+
+    const company = await this.dbGet(`
+      SELECT id, name, public_key, created_at, is_active 
+      FROM companies 
+      WHERE is_active = 1 
+      ORDER BY created_at ASC 
+      LIMIT 1
+    `, []) as Record<string, unknown>;
+
+    if (!company) return null;
+
+    return {
+      id: company.id as string,
+      name: company.name as string,
+      public_key: company.public_key as string,
+      created_at: new Date(company.created_at as string),
+      is_active: Boolean(company.is_active)
+    };
+  }
+
   async createCompany(name: string, publicKey: string): Promise<string> {
     if (!this.dbRun || !this.dbGet) throw new Error('Database not initialized');
 
@@ -398,13 +435,16 @@ export class DatabaseManager {
       }
       
       this.db.close((err) => {
-        if (err) reject(err);
-        else {
-          // Reset connection variables
-          this.db = null;
-          this.dbRun = null;
-          this.dbGet = null;
-          this.dbAll = null;
+        // Reset connection variables regardless of error
+        this.db = null;
+        this.dbRun = null;
+        this.dbGet = null;
+        this.dbAll = null;
+        
+        if (err) {
+          console.error('Error closing database:', err);
+          reject(err);
+        } else {
           resolve();
         }
       });
@@ -428,6 +468,7 @@ export const updateRequestStatus = (requestId: string, status: LGPDRequestStatus
   databaseManager.updateRequestStatus(requestId, status, completedAt);
 export const createCompany = (name: string, publicKey: string) => databaseManager.createCompany(name, publicKey);
 export const getCompanyPublicKey = () => databaseManager.getCompanyPublicKey();
+export const getCompanyMetadata = () => databaseManager.getCompanyMetadata();
 export const closeDatabase = () => databaseManager.close();
 
 // User management functions

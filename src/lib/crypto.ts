@@ -52,13 +52,26 @@ export async function encryptSealedBox(
 export async function decryptSealedBox(
   encryptedData: string,
   recipientPublicKey: string,
-  recipientSecretKey: string
+  recipientSecretKey: string | Uint8Array
 ): Promise<string> {
   await ensureSodiumReady();
   
   const encryptedUint8 = sodium.from_base64(encryptedData);
   const publicKeyUint8 = sodium.from_base64(recipientPublicKey);
-  const secretKeyUint8 = sodium.from_base64(recipientSecretKey);
+  
+  // Handle both string and Uint8Array for secret key
+  let secretKeyUint8: Uint8Array;
+  if (typeof recipientSecretKey === 'string') {
+    try {
+      secretKeyUint8 = sodium.from_base64(recipientSecretKey);
+    } catch {
+      // Fallback: try to decode with Buffer and convert to Uint8Array
+      const buffer = Buffer.from(recipientSecretKey, 'base64');
+      secretKeyUint8 = new Uint8Array(buffer);
+    }
+  } else {
+    secretKeyUint8 = recipientSecretKey;
+  }
   
   const decrypted = sodium.crypto_box_seal_open(
     encryptedUint8,
