@@ -2,76 +2,73 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-
-interface FormData {
-  email: string;
-  password: string;
-}
-
-interface FormErrors {
-  email?: string;
-  password?: string;
-  general?: string;
-}
-
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES, CLIENT_MESSAGES } from '@/lib/message-constants';
+
+// Form validation schemas
+const loginSchema = z.object({
+  email: z.string().email(CLIENT_MESSAGES.EMAIL_INVALID).min(1, CLIENT_MESSAGES.EMAIL_REQUIRED),
+  password: z.string().min(1, CLIENT_MESSAGES.PASSWORD_REQUIRED),
+});
+
+const passwordResetSchema = z.object({
+  email: z.string().email(CLIENT_MESSAGES.EMAIL_INVALID).min(1, CLIENT_MESSAGES.EMAIL_REQUIRED),
+});
+
+type LoginFormData = z.infer<typeof loginSchema>;
+type PasswordResetFormData = z.infer<typeof passwordResetSchema>;
 
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [formData, setFormData] = useState<FormData>({
-    email: '',
-    password: ''
-  });
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [isLoading, setIsLoading] = useState(false);
   const [isPasswordResetMode, setIsPasswordResetMode] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [generalError, setGeneralError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+
+  // Form hooks
+  const loginForm = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  const passwordResetForm = useForm<PasswordResetFormData>({
+    resolver: zodResolver(passwordResetSchema),
+    defaultValues: {
+      email: '',
+    },
+  });
 
   useEffect(() => {
     // Check for auth required message
     const message = searchParams.get('message');
     if (message === 'auth-required') {
-      setErrors({ general: 'Por favor, faça login para enviar solicitações LGPD' });
+      setGeneralError('Por favor, faça login para enviar solicitações LGPD');
     }
   }, [searchParams]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrors({});
+  const handleLoginSubmit = async (data: LoginFormData) => {
+    setGeneralError('');
     setSuccessMessage('');
     setIsLoading(true);
 
-    // Client-side validation
-    const newErrors: FormErrors = {};
-    
-    if (!formData.email) {
-      newErrors.email = CLIENT_MESSAGES.EMAIL_REQUIRED;
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = CLIENT_MESSAGES.EMAIL_INVALID;
-    }
-
-    if (!isPasswordResetMode && !formData.password) {
-      newErrors.password = CLIENT_MESSAGES.PASSWORD_REQUIRED;
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      setIsLoading(false);
-      return;
-    }
-
     try {
-      const endpoint = isPasswordResetMode ? '/api/auth/password-reset' : '/api/auth/login';
-      const body = isPasswordResetMode ? { email: formData.email } : formData;
-
-
-      const response = await fetch(endpoint, {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify(data),
       });
 
       const responseData = await response.json();
@@ -79,32 +76,59 @@ function LoginContent() {
       // Extract JWT token from Authorization header
       const authHeader = response.headers.get('Authorization');
       const token = authHeader?.replace('Bearer ', '') || null;
-      
 
       if (response.ok) {
         if (responseData.code === 'LOGIN_SUCCESS') {
           // Store login state and JWT token from header
           localStorage.setItem('isLoggedIn', 'true');
-          localStorage.setItem('userEmail', formData.email);
+          localStorage.setItem('userEmail', data.email);
           if (token) {
             localStorage.setItem('authToken', token);
-            // Login successful, token stored, redirecting to dashboard
           } else {
             console.warn('Login successful but no token found in Authorization header');
           }
           router.push('/dashboard');
-        } else if (responseData.code === 'PASSWORD_RESET_REQUESTED') {
-          const successMsg = SUCCESS_MESSAGES[responseData.code];
-          setSuccessMessage(successMsg);
         }
       } else if (responseData.code) {
         const errorMsg = ERROR_MESSAGES[responseData.code] || 'Erro desconhecido';
-        setErrors({ general: errorMsg });
+        setGeneralError(errorMsg);
       } else {
-        setErrors({ general: isPasswordResetMode ? 'Erro ao solicitar reset' : 'Erro no login' });
+        setGeneralError('Erro no login');
       }
     } catch {
-      setErrors({ general: CLIENT_MESSAGES.CONNECTION_ERROR });
+      setGeneralError(CLIENT_MESSAGES.CONNECTION_ERROR);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePasswordResetSubmit = async (data: PasswordResetFormData) => {
+    setGeneralError('');
+    setSuccessMessage('');
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('/api/auth/password-reset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      const responseData = await response.json();
+
+      if (response.ok && responseData.code === 'PASSWORD_RESET_REQUESTED') {
+        const successMsg = SUCCESS_MESSAGES[responseData.code];
+        setSuccessMessage(successMsg);
+      } else if (responseData.code) {
+        const errorMsg = ERROR_MESSAGES[responseData.code] || 'Erro desconhecido';
+        setGeneralError(errorMsg);
+      } else {
+        setGeneralError('Erro ao solicitar reset');
+      }
+    } catch {
+      setGeneralError(CLIENT_MESSAGES.CONNECTION_ERROR);
     } finally {
       setIsLoading(false);
     }
@@ -112,135 +136,160 @@ function LoginContent() {
 
   const handlePasswordResetClick = () => {
     setIsPasswordResetMode(true);
-    setErrors({});
+    setGeneralError('');
     setSuccessMessage('');
+    loginForm.reset();
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    
-    // Clear error when user starts typing
-    if (errors[name as keyof FormErrors]) {
-      setErrors(prev => ({ ...prev, [name]: undefined }));
-    }
+  const handleBackToLogin = () => {
+    setIsPasswordResetMode(false);
+    setGeneralError('');
+    setSuccessMessage('');
+    passwordResetForm.reset();
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900">
-      <div className="max-w-md w-full bg-gray-800 p-8 rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold text-center mb-6 text-white">
-          {isPasswordResetMode ? 'Recuperar Senha - Conformidade LGPD' : 'Entrar - Conformidade LGPD'}
-        </h1>
-        
-        {errors.general && (
-          <div data-testid="error-message" className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            {errors.general}
-          </div>
-        )}
-
-        {successMessage && (
-          <div data-testid="message" className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-            {successMessage}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
-              E-mail
-            </label>
-            <input
-              data-testid="email-input"
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-            {errors.email && (
-              <p className="text-red-600 text-sm mt-1">{errors.email}</p>
-            )}
-          </div>
-
-          {!isPasswordResetMode && (
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1">
-                Senha
-              </label>
-              <input
-                data-testid="password-input"
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-              {errors.password && (
-                <p className="text-red-600 text-sm mt-1">{errors.password}</p>
-              )}
-            </div>
-          )}
-
-          <button
-            data-testid={isPasswordResetMode ? "reset-button" : "submit-button"}
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-          >
-            {isLoading 
-              ? (isPasswordResetMode ? 'Enviando...' : 'Entrando...') 
-              : (isPasswordResetMode ? 'Enviar Reset' : 'Entrar')
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl text-center">
+            {isPasswordResetMode ? 'Recuperar Senha' : 'Entrar'}
+          </CardTitle>
+          <CardDescription className="text-center">
+            {isPasswordResetMode 
+              ? 'Digite seu e-mail para receber instruções de recuperação'
+              : 'Acesse sua conta de conformidade LGPD'
             }
-          </button>
-        </form>
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent className="space-y-4">
+          {generalError && (
+            <Alert variant="destructive">
+              <AlertDescription>{generalError}</AlertDescription>
+            </Alert>
+          )}
 
-        <div className="mt-6 space-y-4">
-          {!isPasswordResetMode && (
-            <div className="text-center">
-              <button 
-                type="button"
-                onClick={handlePasswordResetClick}
-                className="text-blue-600 hover:underline bg-transparent border-0 p-0 cursor-pointer underline-offset-2"
-              >
-                Esqueci minha senha
-              </button>
-            </div>
+          {successMessage && (
+            <Alert>
+              <AlertDescription>{successMessage}</AlertDescription>
+            </Alert>
           )}
-          
-          {isPasswordResetMode && (
-            <div className="text-center">
-              <button 
-                type="button"
-                onClick={() => setIsPasswordResetMode(false)}
-                className="text-blue-600 hover:underline bg-transparent border-0 p-0 cursor-pointer underline-offset-2"
+
+          {!isPasswordResetMode ? (
+            <form onSubmit={loginForm.handleSubmit(handleLoginSubmit)} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">E-mail</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  {...loginForm.register('email')}
+                />
+                {loginForm.formState.errors.email && (
+                  <p className="text-sm text-destructive">
+                    {loginForm.formState.errors.email.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Senha</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Sua senha"
+                  {...loginForm.register('password')}
+                />
+                {loginForm.formState.errors.password && (
+                  <p className="text-sm text-destructive">
+                    {loginForm.formState.errors.password.message}
+                  </p>
+                )}
+              </div>
+
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={isLoading}
               >
-                Voltar ao Acesso
-              </button>
-            </div>
+                {isLoading ? 'Entrando...' : 'Entrar'}
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={passwordResetForm.handleSubmit(handlePasswordResetSubmit)} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="reset-email">E-mail</Label>
+                <Input
+                  id="reset-email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  {...passwordResetForm.register('email')}
+                />
+                {passwordResetForm.formState.errors.email && (
+                  <p className="text-sm text-destructive">
+                    {passwordResetForm.formState.errors.email.message}
+                  </p>
+                )}
+              </div>
+
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={isLoading}
+              >
+                {isLoading ? 'Enviando...' : 'Enviar Reset'}
+              </Button>
+            </form>
           )}
-          
-          <div className="text-center">
-            <p className="text-gray-300">
-              Não tem uma conta?{' '}
-              <a href="/register" className="text-blue-600 hover:underline">
-                Cadastre-se
-              </a>
-            </p>
+
+          <div className="space-y-4 pt-4">
+            {!isPasswordResetMode ? (
+              <div className="text-center">
+                <Button 
+                  variant="link" 
+                  onClick={handlePasswordResetClick}
+                  className="p-0 h-auto"
+                >
+                  Esqueci minha senha
+                </Button>
+              </div>
+            ) : (
+              <div className="text-center">
+                <Button 
+                  variant="link" 
+                  onClick={handleBackToLogin}
+                  className="p-0 h-auto"
+                >
+                  Voltar ao Acesso
+                </Button>
+              </div>
+            )}
+            
+            <div className="text-center text-sm text-muted-foreground">
+              {!isPasswordResetMode ? (
+                <>
+                  Não tem uma conta?{' '}
+                  <Button variant="link" className="p-0 h-auto" asChild>
+                    <a href="/register">Cadastre-se</a>
+                  </Button>
+                </>
+              ) : null}
+            </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-900 flex items-center justify-center"><div className="text-white">Carregando...</div></div>}>
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-foreground">Carregando...</div>
+      </div>
+    }>
       <LoginContent />
     </Suspense>
   );

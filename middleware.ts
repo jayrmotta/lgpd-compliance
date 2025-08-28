@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { verifyToken } from '@/lib/jwt'
+import { addSecurityHeaders } from '@/lib/security-headers'
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -40,7 +41,8 @@ export function middleware(request: NextRequest) {
     response.headers.set('x-user-email', user.email)
     response.headers.set('x-user-role', user.role)
     
-    return response
+    // Add security headers
+    return addSecurityHeaders(response)
   }
 
   // Protect user pages - require authentication for data subjects or any authenticated user
@@ -71,7 +73,8 @@ export function middleware(request: NextRequest) {
     response.headers.set('x-user-email', user.email)
     response.headers.set('x-user-role', user.role)
     
-    return response
+    // Add security headers
+    return addSecurityHeaders(response)
   }
 
   // Protect admin pages - require authentication and super_admin role
@@ -109,10 +112,13 @@ export function middleware(request: NextRequest) {
     response.headers.set('x-user-email', user.email)
     response.headers.set('x-user-role', user.role)
     
-    return response
+    // Add security headers
+    return addSecurityHeaders(response)
   }
 
-  return NextResponse.next()
+  // Add security headers to all responses
+  const response = NextResponse.next()
+  return addSecurityHeaders(response)
 }
 
 export const config = {

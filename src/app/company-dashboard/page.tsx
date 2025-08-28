@@ -5,6 +5,13 @@ import { decryptSealedBox } from '@/lib/crypto';
 import { withAuth, useAuth } from '@/lib/auth-client';
 import { authenticatedFetch } from '@/lib/auth-fetch';
 import { getUIMessage, formatRequestType, formatRequestStatus } from '@/lib/translations';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
+import { Download, Lock, CheckCircle, Clock, AlertCircle, X } from 'lucide-react';
 
 interface EncryptedRequest {
   id: string;
@@ -248,16 +255,6 @@ function CompanyDashboardPage() {
     });
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'PENDING': return 'bg-yellow-100 text-yellow-800';
-      case 'PROCESSING': return 'bg-blue-100 text-blue-800';
-      case 'COMPLETED': return 'bg-green-100 text-green-800';
-      case 'FAILED': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   const convertUrlSafeBase64ToStandard = (urlSafeBase64: string): string => {
     // Clean the input - remove any whitespace and non-base64 characters
     const cleaned = urlSafeBase64.trim().replace(/\s/g, '');
@@ -341,111 +338,117 @@ ${data.description}
   };
 
   return (
-    <div className="min-h-screen bg-gray-900">
-      <header className="bg-gray-800 shadow-sm border-b border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background">
+      <header className="border-b bg-card">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <h1 className="text-xl font-semibold text-white">
+            <h1 className="text-xl font-semibold text-foreground">
               {getUIMessage('company_dashboard')}
             </h1>
             <div className="flex items-center space-x-4">
-              <span className="text-gray-300 text-sm">
+              <span className="text-muted-foreground text-sm">
                 {user?.email}
               </span>
-              <a 
-                href="/company-setup" 
-                className="text-blue-400 hover:text-blue-300"
-              >
-                {getUIMessage('key_setup')}
-              </a>
+              <Button variant="ghost" asChild>
+                <a href="/company-setup">
+                  {getUIMessage('key_setup')}
+                </a>
+              </Button>
               {isUnlocked && (
-                                  <button
-                    onClick={() => {
-                      setIsUnlocked(false);
-                      setPrivateKey('');
-                      setDecryptedData({});
-                    }}
-                    className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
-                  >
-                    {getUIMessage('dashboard_locked_button')}
-                  </button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => {
+                    setIsUnlocked(false);
+                    setPrivateKey('');
+                    setDecryptedData({});
+                  }}
+                >
+                  <Lock className="h-4 w-4 mr-2" />
+                  {getUIMessage('dashboard_locked_button')}
+                </Button>
               )}
-              <button
-                onClick={logout}
-                className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
-              >
+              <Button variant="outline" size="sm" onClick={logout}>
                 {getUIMessage('logout')}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
+      <main className="container mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <div className="space-y-6">
 
           {/* Message Display */}
           {message && (
-            <div className={`mb-6 p-4 rounded-lg border ${
-              message.type === 'success' ? 'bg-green-900/30 border-green-700 text-green-200' :
-              message.type === 'error' ? 'bg-red-900/30 border-red-700 text-red-200' :
-              'bg-blue-900/30 border-blue-700 text-blue-200'
-            }`}>
-              <div className="flex items-center">
-                <span className="mr-2">
-                  {message.type === 'success' ? '✅' : message.type === 'error' ? '❌' : 'ℹ️'}
-                </span>
-                <span className="whitespace-pre-wrap">{message.text}</span>
-                <button
+            <Alert className={message.type === 'success' ? 'border-green-200 bg-green-50' : 
+                             message.type === 'error' ? 'border-red-200 bg-red-50' : 
+                             'border-blue-200 bg-blue-50'}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  {message.type === 'success' ? (
+                    <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                  ) : message.type === 'error' ? (
+                    <AlertCircle className="h-4 w-4 text-red-600 mr-2" />
+                  ) : (
+                    <Clock className="h-4 w-4 text-blue-600 mr-2" />
+                  )}
+                  <AlertDescription className="text-sm">
+                    {message.text}
+                  </AlertDescription>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setMessage(null)}
-                  className="ml-auto text-gray-400 hover:text-gray-200"
+                  className="h-6 w-6 p-0"
                 >
-                  {getUIMessage('close')}
-                </button>
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
-            </div>
+            </Alert>
           )}
 
           {!isUnlocked && (
             <div className="max-w-md mx-auto">
-              <div className="bg-gray-800 shadow rounded-lg">
-                <div className="px-4 py-5 sm:p-6">
-                  <h2 className="text-lg font-medium text-white mb-6 text-center">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-center">
                     {getUIMessage('dashboard_unlock_title')}
-                  </h2>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        {getUIMessage('dashboard_unlock_subtitle')}
-                      </label>
-                      <textarea
-                        value={privateKey}
-                        onChange={(e) => setPrivateKey(e.target.value)}
-                        placeholder={getUIMessage('dashboard_unlock_placeholder')}
-                        className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 h-24 resize-none"
-                      />
-                      <p className="text-gray-400 text-xs mt-1">
-                        {getUIMessage('dashboard_unlock_note')}
-                      </p>
-                    </div>
-
-                    {error && (
-                      <div className="bg-red-900/30 border border-red-700 text-red-200 px-4 py-3 rounded">
-                        {error}
-                      </div>
-                    )}
-
-                    <button
-                      onClick={unlockDashboard}
-                      disabled={loading || !privateKey}
-                      className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
-                    >
-                      {loading ? getUIMessage('dashboard_unlocking') : getUIMessage('dashboard_unlock_button')}
-                    </button>
+                  </CardTitle>
+                  <CardDescription className="text-center">
+                    {getUIMessage('dashboard_unlock_subtitle')}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Textarea
+                      value={privateKey}
+                      onChange={(e) => setPrivateKey(e.target.value)}
+                      placeholder={getUIMessage('dashboard_unlock_placeholder')}
+                      className="min-h-[96px] resize-none"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {getUIMessage('dashboard_unlock_note')}
+                    </p>
                   </div>
-                </div>
-              </div>
+
+                  {error && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  <Button
+                    onClick={unlockDashboard}
+                    disabled={loading || !privateKey}
+                    className="w-full"
+                  >
+                    {loading ? getUIMessage('dashboard_unlocking') : getUIMessage('dashboard_unlock_button')}
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
           )}
 
@@ -453,32 +456,30 @@ ${data.description}
             <div className="space-y-6">
               
               {/* Success Notice */}
-              <div className="bg-green-900/30 border border-green-700 rounded-lg p-4">
-                <div className="flex items-center">
-                  <div className="text-green-400 text-xl mr-3">✅</div>
-                  <div>
-                    <h3 className="text-green-300 font-semibold">{getUIMessage('dashboard_unlocked_title')}</h3>
-                    <p className="text-green-200 text-sm">
-                      {getUIMessage('dashboard_unlocked_message')}
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <Alert className="border-green-200 bg-green-50">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <AlertDescription>
+                  <span className="font-semibold">{getUIMessage('dashboard_unlocked_title')}</span>
+                  <br />
+                  {getUIMessage('dashboard_unlocked_message')}
+                </AlertDescription>
+              </Alert>
 
               {/* Requests Table */}
-              <div className="bg-gray-800 shadow rounded-lg">
-                <div className="px-4 py-5 sm:p-6">
-                  <h2 className="text-lg font-medium text-white mb-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>
                     {getUIMessage('requests_title')} ({requests.length})
-                  </h2>
-
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
                   {loading ? (
                     <div className="text-center py-8">
-                      <p className="text-gray-300">{getUIMessage('requests_loading')}</p>
+                      <p className="text-muted-foreground">{getUIMessage('requests_loading')}</p>
                     </div>
                   ) : requests.length === 0 ? (
                     <div className="text-center py-8">
-                      <p className="text-gray-300">{getUIMessage('requests_empty')}</p>
+                      <p className="text-muted-foreground">{getUIMessage('requests_empty')}</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -486,85 +487,107 @@ ${data.description}
                         const decrypted = decryptedData[request.id];
                         
                         return (
-                          <div key={request.id} className="border border-gray-600 rounded-lg p-4">
-                            <div className="flex justify-between items-start mb-4">
-                              <div>
-                                <h3 className="text-white font-medium">
-                                  {formatRequestType(request.type)} - {request.id}
-                                </h3>
-                                <p className="text-gray-400 text-sm">
-                                  {getUIMessage('requests_submitted')}: {formatDate(request.created_at)} | 
-                                  {getUIMessage('requests_due')}: {formatDate(request.response_due_at)}
-                                </p>
+                          <Card key={request.id} className="border">
+                            <CardHeader className="pb-3">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <CardTitle className="text-base">
+                                    {formatRequestType(request.type)} - {request.id}
+                                  </CardTitle>
+                                  <CardDescription className="text-sm">
+                                    {getUIMessage('requests_submitted')}: {formatDate(request.created_at)} | 
+                                    {getUIMessage('requests_due')}: {formatDate(request.response_due_at)}
+                                  </CardDescription>
+                                </div>
+                                <Badge variant={
+                                  request.status === 'PENDING' ? 'secondary' :
+                                  request.status === 'PROCESSING' ? 'default' :
+                                  request.status === 'COMPLETED' ? 'default' :
+                                  'destructive'
+                                }>
+                                  {formatRequestStatus(request.status)}
+                                </Badge>
                               </div>
-                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(request.status)}`}>
-                                {formatRequestStatus(request.status)}
-                              </span>
-                            </div>
+                            </CardHeader>
 
                             {decrypted ? (
-                              <div className="bg-gray-700 rounded-lg p-4 space-y-3">
-                                <h4 className="text-green-400 font-medium">{getUIMessage('requests_decrypted_content')}</h4>
-                                
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                                  <div>
-                                    <span className="text-gray-300 font-medium">{getUIMessage('requests_user_email')}</span>
-                                    <p className="text-white">{decrypted.userEmail}</p>
+                              <CardContent className="pt-0">
+                                <div className="bg-muted/50 rounded-lg p-4 space-y-4">
+                                  <div className="flex items-center">
+                                    <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                                    <span className="font-medium text-sm">{getUIMessage('requests_decrypted_content')}</span>
                                   </div>
                                   
-                                  <div>
-                                    <span className="text-gray-300 font-medium">CPF:</span>
-                                    <p className="text-white">{decrypted.cpf}</p>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                      <span className="text-muted-foreground font-medium">{getUIMessage('requests_user_email')}</span>
+                                      <p className="font-medium">{decrypted.userEmail}</p>
+                                    </div>
+                                    
+                                    <div>
+                                      <span className="text-muted-foreground font-medium">CPF:</span>
+                                      <p className="font-medium">{decrypted.cpf}</p>
+                                    </div>
+                                    
+                                    <div className="md:col-span-2">
+                                      <span className="text-muted-foreground font-medium">{getUIMessage('requests_reason')}</span>
+                                      <p className="font-medium">{decrypted.reason}</p>
+                                    </div>
+                                    
+                                    <div className="md:col-span-2">
+                                      <span className="text-muted-foreground font-medium">{getUIMessage('requests_description')}</span>
+                                      <p className="font-medium">{decrypted.description}</p>
+                                    </div>
                                   </div>
-                                  
-                                  <div className="md:col-span-2">
-                                    <span className="text-gray-300 font-medium">{getUIMessage('requests_reason')}</span>
-                                    <p className="text-white">{decrypted.reason}</p>
-                                  </div>
-                                  
-                                  <div className="md:col-span-2">
-                                    <span className="text-gray-300 font-medium">{getUIMessage('requests_description')}</span>
-                                    <p className="text-white">{decrypted.description}</p>
-                                  </div>
-                                </div>
 
-                                <div className="flex space-x-2 pt-2">
-                                  {request.status === 'PENDING' && (
-                                    <button 
-                                      onClick={() => updateRequestStatus(request.id, 'PROCESSING')}
-                                      className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
+                                  <Separator />
+
+                                  <div className="flex flex-wrap gap-2">
+                                    {request.status === 'PENDING' && (
+                                      <Button 
+                                        size="sm"
+                                        onClick={() => updateRequestStatus(request.id, 'PROCESSING')}
+                                      >
+                                        {getUIMessage('requests_process_button')}
+                                      </Button>
+                                    )}
+                                    {request.status === 'PROCESSING' && (
+                                      <Button 
+                                        size="sm"
+                                        variant="default"
+                                        onClick={() => updateRequestStatus(request.id, 'COMPLETED')}
+                                      >
+                                        {getUIMessage('requests_complete_button')}
+                                      </Button>
+                                    )}
+                                    <Button 
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => downloadRequestData(request.id, decrypted)}
                                     >
-                                      {getUIMessage('requests_process_button')}
-                                    </button>
-                                  )}
-                                  {request.status === 'PROCESSING' && (
-                                    <button 
-                                      onClick={() => updateRequestStatus(request.id, 'COMPLETED')}
-                                      className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
-                                    >
-                                      {getUIMessage('requests_complete_button')}
-                                    </button>
-                                  )}
-                                  <button 
-                                    onClick={() => downloadRequestData(request.id, decrypted)}
-                                    className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-500"
-                                  >
-                                    {getUIMessage('requests_download_button')}
-                                  </button>
+                                      <Download className="h-4 w-4 mr-2" />
+                                      {getUIMessage('requests_download_button')}
+                                    </Button>
+                                  </div>
                                 </div>
-                              </div>
+                              </CardContent>
                             ) : (
-                              <div className="bg-red-900/20 border border-red-700 rounded-lg p-4">
-                                <p className="text-red-300">{getUIMessage('requests_decrypt_failed')}</p>
-                              </div>
+                              <CardContent className="pt-0">
+                                <Alert variant="destructive">
+                                  <AlertCircle className="h-4 w-4" />
+                                  <AlertDescription>
+                                    {getUIMessage('requests_decrypt_failed')}
+                                  </AlertDescription>
+                                </Alert>
+                              </CardContent>
                             )}
-                          </div>
+                          </Card>
                         );
                       })}
                     </div>
                   )}
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             </div>
           )}
         </div>

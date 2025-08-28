@@ -4,6 +4,15 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { generateKeyPair, getKeyFingerprint } from '@/lib/crypto';
 import { withAuth, useAuth } from '@/lib/auth-client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Shield, AlertTriangle, CheckCircle, Copy, Download, Key, Building2, ArrowLeft, Save } from 'lucide-react';
 
 function CompanySetupPage() {
   const { user, logout } = useAuth();
@@ -100,233 +109,268 @@ function CompanySetupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900">
-      <header className="bg-gray-800 shadow-sm border-b border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background">
+      <header className="border-b bg-card">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <h1 className="text-xl font-semibold text-white">Configuração da Empresa - Chaves de Criptografia</h1>
+            <h1 className="text-xl font-semibold">Configuração da Empresa - Chaves de Criptografia</h1>
             <div className="flex items-center space-x-4">
-              <span className="text-gray-300 text-sm">
+              <span className="text-sm text-muted-foreground">
                 {user?.email}
               </span>
-              <a 
-                href="/company-dashboard" 
-                className="text-blue-400 hover:text-blue-300"
-              >
-                Voltar ao Dashboard
-              </a>
-              <button
-                onClick={logout}
-                className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
-              >
+              <Button variant="ghost" asChild>
+                <a href="/company-dashboard">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Voltar ao Dashboard
+                </a>
+              </Button>
+              <Button variant="outline" onClick={logout}>
                 Logout
-              </button>
+              </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
+      <main className="container mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto space-y-6">
           
           {/* Message Display */}
           {message && (
-            <div className={`mb-6 p-4 rounded-lg border ${
-              message.type === 'success' ? 'bg-green-900/30 border-green-700 text-green-200' :
-              message.type === 'error' ? 'bg-red-900/30 border-red-700 text-red-200' :
-              'bg-blue-900/30 border-blue-700 text-blue-200'
-            }`}>
-              <div className="flex items-center">
-                <span className="mr-2">
-                  {message.type === 'success' ? '✅' : message.type === 'error' ? '❌' : 'ℹ️'}
-                </span>
-                <span className="whitespace-pre-wrap">{message.text}</span>
-                <button
-                  onClick={() => setMessage(null)}
-                  className="ml-auto text-gray-400 hover:text-gray-200"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
+            <Alert className={
+              message.type === 'success' ? 'border-green-200 bg-green-50' :
+              message.type === 'error' ? 'border-red-200 bg-red-50' :
+              'border-blue-200 bg-blue-50'
+            }>
+              {message.type === 'success' ? (
+                <CheckCircle className="h-4 w-4 text-green-600" />
+              ) : message.type === 'error' ? (
+                <AlertTriangle className="h-4 w-4 text-red-600" />
+              ) : (
+                <Shield className="h-4 w-4 text-blue-600" />
+              )}
+              <AlertDescription className={
+                message.type === 'success' ? 'text-green-800' :
+                message.type === 'error' ? 'text-red-800' :
+                'text-blue-800'
+              }>
+                <div className="flex items-center justify-between">
+                  <span className="whitespace-pre-wrap">{message.text}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setMessage(null)}
+                    className="ml-2 h-6 w-6 p-0"
+                  >
+                    ✕
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
           )}
           
           {/* Security Notice */}
-          <div className="bg-red-900/30 border border-red-700 rounded-lg p-6 mb-6">
-            <div className="flex items-center">
-              <div className="text-red-400 text-2xl mr-3">🔐</div>
-              <div>
-                <h3 className="text-red-300 font-semibold">Critical Security Information</h3>
-                <ul className="text-red-200 text-sm mt-2 space-y-1">
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              <div className="space-y-2">
+                <h3 className="font-semibold">Critical Security Information</h3>
+                <ul className="text-sm space-y-1">
                   <li>• Private keys are generated in your browser and NEVER sent to our servers</li>
                   <li>• You must save your private key securely (password manager recommended)</li>
                   <li>• If you lose your private key, encrypted data cannot be recovered</li>
                   <li>• Never share your private key or store it on company servers</li>
                 </ul>
               </div>
-            </div>
-          </div>
+            </AlertDescription>
+          </Alert>
 
           {!keyPair && (
-            <div className="bg-gray-800 shadow rounded-lg">
-              <div className="px-4 py-5 sm:p-6">
-                <h2 className="text-lg font-medium text-white mb-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Building2 className="h-5 w-5 mr-2" />
                   Configuração da Empresa
-                </h2>
-                
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Nome da Empresa *
-                    </label>
-                    <input
-                      type="text"
-                      value={companyName}
-                      onChange={(e) => setCompanyName(e.target.value)}
-                      required
-                      className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2"
-                      placeholder="Ex: TechCorp Ltda, Acme Solutions Inc."
-                    />
-                    <p className="text-gray-400 text-xs mt-1">
-                      Este nome será usado em toda a plataforma e nos arquivos de chaves.
-                    </p>
-                  </div>
-                  
-                  <div className="text-center">
-                    <p className="text-gray-300 mb-6">
-                      Após informar o nome da empresa, clique abaixo para gerar o par de chaves de criptografia.
-                      Isso criará uma chave pública (para receber solicitações LGPD criptografadas)
-                      e uma chave privada (para descriptografar solicitações).
-                    </p>
-                    
-                    <button
-                      onClick={generateCompanyKeys}
-                      disabled={isGenerating || !companyName.trim()}
-                      className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 disabled:opacity-50"
-                    >
-                      {isGenerating ? 'Gerando Chaves...' : 'Gerar Chaves de Criptografia'}
-                    </button>
-                  </div>
+                </CardTitle>
+                <CardDescription>
+                  Configure sua empresa para receber solicitações LGPD criptografadas
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="company-name">Nome da Empresa *</Label>
+                  <Input
+                    id="company-name"
+                    type="text"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    required
+                    placeholder="Ex: TechCorp Ltda, Acme Solutions Inc."
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Este nome será usado em toda a plataforma e nos arquivos de chaves.
+                  </p>
                 </div>
-              </div>
-            </div>
+                
+                <div className="text-center space-y-4">
+                  <p className="text-muted-foreground">
+                    Após informar o nome da empresa, clique abaixo para gerar o par de chaves de criptografia.
+                    Isso criará uma chave pública (para receber solicitações LGPD criptografadas)
+                    e uma chave privada (para descriptografar solicitações).
+                  </p>
+                  
+                  <Button
+                    onClick={generateCompanyKeys}
+                    disabled={isGenerating || !companyName.trim()}
+                    size="lg"
+                  >
+                    <Key className="h-4 w-4 mr-2" />
+                    {isGenerating ? 'Gerando Chaves...' : 'Gerar Chaves de Criptografia'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {keyPair && (
             <div className="space-y-6">
               
               {/* Generated Keys */}
-              <div className="bg-gray-800 shadow rounded-lg">
-                <div className="px-4 py-5 sm:p-6">
-                  <h2 className="text-lg font-medium text-white mb-6">
-                    🎉 Chaves de Criptografia Geradas com Sucesso
-                  </h2>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Key Fingerprint (for identification)
-                      </label>
-                      <div className="flex items-center space-x-2">
-                        <code className="bg-gray-700 text-green-400 px-3 py-2 rounded flex-1">
-                          {getKeyFingerprint(keyPair.publicKey)}
-                        </code>
-                        <button
-                          onClick={() => copyToClipboard(getKeyFingerprint(keyPair.publicKey), 'Fingerprint')}
-                          className="bg-gray-600 text-white px-3 py-2 rounded hover:bg-gray-500"
-                        >
-                          Copy
-                        </button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Public Key (safe to share)
-                      </label>
-                      <div className="flex items-center space-x-2">
-                        <textarea
-                          readOnly
-                          value={keyPair.publicKey}
-                          className="bg-gray-700 text-gray-100 px-3 py-2 rounded flex-1 h-20 resize-none"
-                        />
-                        <button
-                          onClick={() => copyToClipboard(keyPair.publicKey, 'Public Key')}
-                          className="bg-gray-600 text-white px-3 py-2 rounded hover:bg-gray-500"
-                        >
-                          Copy
-                        </button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-red-300 mb-2">
-                        🔒 Private Key (KEEP SECRET - Save in Password Manager)
-                      </label>
-                      <div className="flex items-center space-x-2">
-                        <textarea
-                          readOnly
-                          value={keyPair.secretKey}
-                          className="bg-red-900/20 border border-red-700 text-red-200 px-3 py-2 rounded flex-1 h-20 resize-none"
-                        />
-                        <button
-                          onClick={() => copyToClipboard(keyPair.secretKey, 'Private Key')}
-                          className="bg-red-600 text-white px-3 py-2 rounded hover:bg-red-700"
-                        >
-                          Copy
-                        </button>
-                      </div>
-                      <p className="text-red-400 text-xs mt-1">
-                        ⚠️ This is your only chance to save the private key. It will not be shown again.
-                      </p>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center text-green-600">
+                    <CheckCircle className="h-5 w-5 mr-2" />
+                    Chaves de Criptografia Geradas com Sucesso
+                  </CardTitle>
+                  <CardDescription>
+                    Suas chaves foram geradas localmente no seu navegador
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Key Fingerprint (for identification)</Label>
+                    <div className="flex items-center space-x-2">
+                      <code className="bg-muted px-3 py-2 rounded flex-1 font-mono text-sm">
+                        {getKeyFingerprint(keyPair.publicKey)}
+                      </code>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => copyToClipboard(getKeyFingerprint(keyPair.publicKey), 'Fingerprint')}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
-                </div>
-              </div>
+
+                  <div className="space-y-2">
+                    <Label>Public Key (safe to share)</Label>
+                    <div className="flex items-center space-x-2">
+                      <Textarea
+                        readOnly
+                        value={keyPair.publicKey}
+                        className="font-mono text-sm"
+                        rows={3}
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => copyToClipboard(keyPair.publicKey, 'Public Key')}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-red-600 flex items-center">
+                      <Shield className="h-4 w-4 mr-2" />
+                      Private Key (KEEP SECRET - Save in Password Manager)
+                    </Label>
+                    <div className="flex items-center space-x-2">
+                      <Textarea
+                        readOnly
+                        value={keyPair.secretKey}
+                        className="font-mono text-sm border-red-200 bg-red-50"
+                        rows={3}
+                      />
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => copyToClipboard(keyPair.secretKey, 'Private Key')}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <p className="text-xs text-red-600">
+                      ⚠️ This is your only chance to save the private key. It will not be shown again.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
 
               {/* Instructions */}
               {showInstructions && (
-                <div className="bg-blue-900/30 border border-blue-700 rounded-lg">
-                  <div className="px-4 py-5 sm:p-6">
-                    <h3 className="text-blue-300 font-semibold mb-4">📝 Próximos Passos</h3>
-                    <ol className="text-blue-200 space-y-2">
-                      <li>1. <strong>Salvar Chave Privada:</strong> Copie a chave privada e salve em seu gerenciador de senhas</li>
-                      <li>2. <strong>Baixar Backup:</strong> Baixe o arquivo de chaves como backup</li>
-                      <li>3. <strong>Registrar Chave Pública:</strong> Registre a chave pública na plataforma</li>
-                      <li>4. <strong>Acessar Dashboard:</strong> Use sua chave privada para descriptografar solicitações LGPD</li>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Save className="h-5 w-5 mr-2" />
+                      Próximos Passos
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <ol className="space-y-2 text-sm">
+                      <li className="flex items-start">
+                        <Badge variant="outline" className="mr-2 mt-0.5">1</Badge>
+                        <span><strong>Salvar Chave Privada:</strong> Copie a chave privada e salve em seu gerenciador de senhas</span>
+                      </li>
+                      <li className="flex items-start">
+                        <Badge variant="outline" className="mr-2 mt-0.5">2</Badge>
+                        <span><strong>Baixar Backup:</strong> Baixe o arquivo de chaves como backup</span>
+                      </li>
+                      <li className="flex items-start">
+                        <Badge variant="outline" className="mr-2 mt-0.5">3</Badge>
+                        <span><strong>Registrar Chave Pública:</strong> Registre a chave pública na plataforma</span>
+                      </li>
+                      <li className="flex items-start">
+                        <Badge variant="outline" className="mr-2 mt-0.5">4</Badge>
+                        <span><strong>Acessar Dashboard:</strong> Use sua chave privada para descriptografar solicitações LGPD</span>
+                      </li>
                     </ol>
                     
-                    <div className="flex space-x-4 mt-6">
-                      <button
+                    <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                      <Button
                         onClick={downloadKeys}
-                        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                        variant="outline"
                       >
-                        📁 Download Key File
-                      </button>
+                        <Download className="h-4 w-4 mr-2" />
+                        Download Key File
+                      </Button>
                       
-                      <label className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="key-saved"
                           checked={keySaved}
-                          onChange={(e) => setKeySaved(e.target.checked)}
-                          className="rounded"
+                          onCheckedChange={(checked) => setKeySaved(checked as boolean)}
                         />
-                        <span className="text-blue-200 text-sm">
+                        <Label htmlFor="key-saved" className="text-sm">
                           I have saved my private key securely
-                        </span>
-                      </label>
+                        </Label>
+                      </div>
                     </div>
                     
                     {keySaved && (
-                      <button
+                      <Button
                         onClick={registerPublicKey}
-                        className="bg-green-600 text-white px-6 py-3 rounded-md hover:bg-green-700 mt-4"
+                        className="w-full sm:w-auto"
+                        size="lg"
                       >
-                        ✅ Register Public Key & Continue
-                      </button>
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Register Public Key & Continue
+                      </Button>
                     )}
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               )}
             </div>
           )}

@@ -1,8 +1,19 @@
 import jwt from 'jsonwebtoken';
 
-// In production, this should be an environment variable
 const JWT_SECRET = process.env.JWT_SECRET || 'lgpd-dev-secret-key-change-in-production';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
+
+// Environment validation - only run in production runtime, not during build
+function validateJWTConfig() {
+  if (process.env.NODE_ENV === 'production') {
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET environment variable is required in production');
+    }
+    if (JWT_SECRET.length < 32) {
+      throw new Error('JWT_SECRET must be at least 32 characters long in production');
+    }
+  }
+}
 
 export interface JWTPayload {
   userId: string;
@@ -16,6 +27,9 @@ export interface JWTPayload {
  * Generate a JWT token for authenticated user
  */
 export function generateToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): string {
+  // Validate JWT configuration in production
+  validateJWTConfig();
+  
   // Use type assertion to handle JWT library typing issues
   return jwt.sign(payload, JWT_SECRET, {
     expiresIn: JWT_EXPIRES_IN
@@ -27,6 +41,9 @@ export function generateToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): string 
  */
 export function verifyToken(token: string): JWTPayload | null {
   try {
+    // Validate JWT configuration in production
+    validateJWTConfig();
+    
     const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
     return decoded;
   } catch (error) {

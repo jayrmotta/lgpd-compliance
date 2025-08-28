@@ -3,6 +3,12 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authenticatedFetch } from '@/lib/auth-fetch';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Shield, AlertCircle, Plus, RefreshCw, FileText, Clock, CheckCircle, XCircle } from 'lucide-react';
 
 interface Request {
   id: string;
@@ -65,19 +71,39 @@ export default function MyRequestsPage() {
     switch (status.toLowerCase()) {
       case 'pending':
       case 'pendente':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'completed':
       case 'concluída':
       case 'concluida':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-800 border-green-200';
       case 'processing':
       case 'processando':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'failed':
       case 'rejected':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800 border-red-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'pending':
+      case 'pendente':
+        return <Clock className="h-4 w-4" />;
+      case 'completed':
+      case 'concluída':
+      case 'concluida':
+        return <CheckCircle className="h-4 w-4" />;
+      case 'processing':
+      case 'processando':
+        return <RefreshCw className="h-4 w-4" />;
+      case 'failed':
+      case 'rejected':
+        return <XCircle className="h-4 w-4" />;
+      default:
+        return <FileText className="h-4 w-4" />;
     }
   };
 
@@ -115,164 +141,166 @@ export default function MyRequestsPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-900 text-gray-100 flex items-center justify-center">
-        <div>Por favor, faça login para visualizar suas solicitações</div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">Por favor, faça login para visualizar suas solicitações</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-900">
-      <header className="bg-gray-800 shadow-sm border-b border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background">
+      <header className="border-b bg-card">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <h1 className="text-xl font-semibold text-white">Minhas Solicitações</h1>
+            <h1 className="text-xl font-semibold">Minhas Solicitações</h1>
             <div className="flex items-center gap-4">
-              <a 
-                href="/dashboard" 
-                className="text-blue-400 hover:text-blue-300"
-              >
-                Dashboard
-              </a>
-              <a 
-                href="/lgpd-requests" 
-                className="text-blue-400 hover:text-blue-300"
-              >
-                Nova Solicitação
-              </a>
-              <button 
-                className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
-                onClick={handleLogout}
-              >
+              <Button variant="ghost" asChild>
+                <a href="/dashboard">Dashboard</a>
+              </Button>
+              <Button variant="ghost" asChild>
+                <a href="/lgpd-requests">Nova Solicitação</a>
+              </Button>
+              <Button variant="destructive" onClick={handleLogout}>
                 Sair
-              </button>
+              </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          <div className="bg-blue-900/30 border border-blue-700 rounded-lg p-4 mb-6">
-            <div className="flex items-center">
-              <div className="text-blue-400 text-2xl mr-3">🔒</div>
-              <div>
-                <h3 className="text-blue-300 font-semibold">Criptografia Sealed Box Ativa</h3>
-                <p className="text-blue-200 text-sm mt-1">• Seus dados pessoais estão criptografados usando libsodium</p>
-                <p className="text-blue-200 text-sm">• Apenas a empresa pode descriptografar suas solicitações</p>
-                <p className="text-blue-200 text-sm">• A plataforma opera com conhecimento zero dos seus dados</p>
-                <p className="text-blue-200 text-sm">• Máxima proteção da privacidade implementada</p>
+      <main className="container mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto space-y-6">
+          {/* Security Notice */}
+          <Alert>
+            <Shield className="h-4 w-4" />
+            <AlertDescription>
+              <div className="space-y-1">
+                <h3 className="font-semibold">Criptografia Sealed Box Ativa</h3>
+                <ul className="text-sm space-y-1">
+                  <li>• Seus dados pessoais estão criptografados usando libsodium</li>
+                  <li>• Apenas a empresa pode descriptografar suas solicitações</li>
+                  <li>• A plataforma opera com conhecimento zero dos seus dados</li>
+                  <li>• Máxima proteção da privacidade implementada</li>
+                </ul>
               </div>
-            </div>
-          </div>
+            </AlertDescription>
+          </Alert>
           
-          <div className="bg-gray-800 shadow rounded-lg">
-            <div className="px-4 py-5 sm:p-6">
-              <h2 className="text-lg font-medium text-white mb-6">
-                Histórico de Solicitações LGPD
-              </h2>
-              
+          <Card>
+            <CardHeader>
+              <CardTitle>Histórico de Solicitações LGPD</CardTitle>
+              <CardDescription>
+                Visualize o status e histórico de todas as suas solicitações LGPD
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
               {error && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                  <p>Erro ao carregar solicitações: {error}</p>
-                  <button 
-                    onClick={loadRequests}
-                    className="mt-2 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
-                  >
-                    Tentar Novamente
-                  </button>
-                </div>
+                <Alert variant="destructive" className="mb-6">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    <p>Erro ao carregar solicitações: {error}</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={loadRequests}
+                      className="mt-2"
+                    >
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Tentar Novamente
+                    </Button>
+                  </AlertDescription>
+                </Alert>
               )}
 
               {loading ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-300">Carregando suas solicitações...</p>
+                  <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-muted-foreground">Carregando suas solicitações...</p>
                 </div>
               ) : requests.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-300">Você ainda não fez nenhuma solicitação LGPD.</p>
-                  <a 
-                    href="/lgpd-requests"
-                    className="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-                  >
-                    Criar Nova Solicitação
-                  </a>
+                  <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-muted-foreground mb-4">Você ainda não fez nenhuma solicitação LGPD.</p>
+                  <Button asChild>
+                    <a href="/lgpd-requests">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Criar Nova Solicitação
+                    </a>
+                  </Button>
                 </div>
               ) : (
-                <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-                  <table className="min-w-full divide-y divide-gray-300">
-                    <thead className="bg-gray-700">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                          ID da Solicitação
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                          Tipo
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                          Data de Submissão
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                          Descrição
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                          Criptografia
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-gray-800 divide-y divide-gray-600">
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ID da Solicitação</TableHead>
+                        <TableHead>Tipo</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Data de Submissão</TableHead>
+                        <TableHead>Descrição</TableHead>
+                        <TableHead>Criptografia</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                       {requests.map((request) => (
-                        <tr key={request.id}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
+                        <TableRow key={request.id}>
+                          <TableCell className="font-medium">
                             {request.id}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-100">
+                          </TableCell>
+                          <TableCell>
                             {formatRequestType(request.type)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span 
-                              className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(formatStatus(request.status))}`}
+                          </TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant="outline" 
+                              className={getStatusColor(formatStatus(request.status))}
                               data-testid={`request-status-${request.status.toLowerCase().replace(/\s+/g, '-')}`}
                             >
-                              {formatStatus(request.status)}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-100">
+                              {getStatusIcon(formatStatus(request.status))}
+                              <span className="ml-1">{formatStatus(request.status)}</span>
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
                             {formatDate(request.created_at)}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-100">
+                          </TableCell>
+                          <TableCell className="max-w-xs truncate">
                             {request.description}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          </TableCell>
+                          <TableCell>
                             {request.description.includes('[ENCRYPTED]') ? (
-                              <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                                🔒 Sealed Box
-                              </span>
+                              <Badge variant="secondary">
+                                <Shield className="h-3 w-3 mr-1" />
+                                Sealed Box
+                              </Badge>
                             ) : (
-                              <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                              <Badge variant="outline">
                                 ⚠️ Plaintext
-                              </span>
+                              </Badge>
                             )}
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       ))}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 </div>
               )}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
           
-          <div className="mt-6 text-center">
-            <a 
-              href="/lgpd-requests"
-              className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 inline-block"
-            >
-              Criar Nova Solicitação LGPD
-            </a>
+          <div className="text-center">
+            <Button asChild size="lg">
+              <a href="/lgpd-requests">
+                <Plus className="h-4 w-4 mr-2" />
+                Criar Nova Solicitação LGPD
+              </a>
+            </Button>
           </div>
         </div>
       </main>

@@ -2,61 +2,49 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES, CLIENT_MESSAGES } from '@/lib/message-constants';
 
-interface FormData {
-  email: string;
-  password: string;
-  userType: 'data_subject';
-}
+// Form validation schema
+const registerSchema = z.object({
+  email: z.string().email(CLIENT_MESSAGES.EMAIL_INVALID).min(1, CLIENT_MESSAGES.EMAIL_REQUIRED),
+  password: z.string()
+    .min(1, CLIENT_MESSAGES.PASSWORD_REQUIRED)
+    .min(8, 'A senha deve ter pelo menos 8 caracteres')
+    .regex(/[A-Z]/, 'A senha deve conter pelo menos uma letra maiúscula')
+    .regex(/[a-z]/, 'A senha deve conter pelo menos uma letra minúscula')
+    .regex(/[!@#$%^&*(),.?":{}|<>]/, 'A senha deve conter pelo menos um caractere especial'),
+  userType: z.literal('data_subject'),
+});
 
-interface FormErrors {
-  email?: string;
-  password?: string;
-  general?: string;
-}
-
+type RegisterFormData = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState<FormData>({
-    email: '',
-    password: '',
-    userType: 'data_subject'
-  });
-  const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [generalError, setGeneralError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
+  // Form hook
+  const form = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+      userType: 'data_subject',
+    },
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrors({});
+  const handleSubmit = async (data: RegisterFormData) => {
+    setGeneralError('');
     setIsLoading(true);
-
-    // Client-side validation
-    const newErrors: FormErrors = {};
-    
-    if (!formData.email) {
-      newErrors.email = CLIENT_MESSAGES.EMAIL_REQUIRED;
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = CLIENT_MESSAGES.EMAIL_INVALID;
-    }
-
-    if (!formData.password) {
-      newErrors.password = CLIENT_MESSAGES.PASSWORD_REQUIRED;
-    } else if (formData.password.length < 8 || 
-               !/[A-Z]/.test(formData.password) || 
-               !/[a-z]/.test(formData.password) || 
-               !/[!@#$%^&*(),.?":{}|<>]/.test(formData.password)) {
-      newErrors.password = 'A senha deve ter pelo menos 8 caracteres, incluindo maiúscula, minúscula e caractere especial';
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      setIsLoading(false);
-      return;
-    }
 
     try {
       const response = await fetch('/api/auth/register', {
@@ -64,7 +52,7 @@ export default function RegisterPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(data),
       });
 
       const responseData = await response.json();
@@ -77,110 +65,116 @@ export default function RegisterPage() {
         }, 2000);
       } else if (responseData.code) {
         const errorMsg = ERROR_MESSAGES[responseData.code] || 'Erro desconhecido';
-        setErrors({ general: errorMsg });
+        setGeneralError(errorMsg);
       } else {
-        setErrors({ general: 'Erro no cadastro' });
+        setGeneralError('Erro no cadastro');
       }
     } catch {
-      setErrors({ general: CLIENT_MESSAGES.CONNECTION_ERROR });
+      setGeneralError(CLIENT_MESSAGES.CONNECTION_ERROR);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    
-    // Clear error when user starts typing
-    if (errors[name as keyof FormErrors]) {
-      setErrors(prev => ({ ...prev, [name]: undefined }));
-    }
-  };
-
+  // Success state
   if (successMessage) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
-        <div className="max-w-md w-full bg-gray-800 p-8 rounded-lg shadow-md">
-          <div data-testid="success-message" className="text-green-400 text-center mb-4">
-            {successMessage}
-          </div>
-          <p className="text-center text-gray-300">Redirecionando para login...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl text-center">Cadastro Realizado!</CardTitle>
+            <CardDescription className="text-center">
+              Sua conta foi criada com sucesso
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert>
+              <AlertDescription data-testid="success-message">
+                {successMessage}
+              </AlertDescription>
+            </Alert>
+            <p className="text-center text-sm text-muted-foreground">
+              Redirecionando para login...
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900">
-      <div className="max-w-md w-full bg-gray-800 p-8 rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold text-center mb-6 text-white">Cadastro - LGPD Compliance</h1>
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl text-center">Cadastro</CardTitle>
+          <CardDescription className="text-center">
+            Crie sua conta de conformidade LGPD
+          </CardDescription>
+        </CardHeader>
         
-        {errors.general && (
-          <div data-testid="error-message" className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            {errors.general}
-          </div>
-        )}
+        <CardContent className="space-y-4">
+          {generalError && (
+            <Alert variant="destructive">
+              <AlertDescription data-testid="error-message">
+                {generalError}
+              </AlertDescription>
+            </Alert>
+          )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
-              E-mail
-            </label>
-            <input
-              data-testid="email-input"
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-            {errors.email && (
-              <p className="text-red-600 text-sm mt-1">{errors.email}</p>
-            )}
-          </div>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">E-mail</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="seu@email.com"
+                data-testid="email-input"
+                {...form.register('email')}
+              />
+              {form.formState.errors.email && (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.email.message}
+                </p>
+              )}
+            </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1">
-              Senha
-            </label>
-            <input
-              data-testid="password-input"
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-            {errors.password && (
-              <p className="text-red-600 text-sm mt-1">{errors.password}</p>
-            )}
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Senha</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Sua senha"
+                data-testid="password-input"
+                {...form.register('password')}
+              />
+              {form.formState.errors.password && (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.password.message}
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                A senha deve ter pelo menos 8 caracteres, incluindo maiúscula, minúscula e caractere especial
+              </p>
+            </div>
 
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={isLoading}
+              data-testid="submit-button"
+            >
+              {isLoading ? 'Cadastrando...' : 'Cadastrar'}
+            </Button>
+          </form>
 
-          <button
-            data-testid="submit-button"
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-          >
-            {isLoading ? 'Cadastrando...' : 'Cadastrar'}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center">
-          <p className="text-gray-300">
+          <div className="text-center text-sm text-muted-foreground">
             Já tem uma conta?{' '}
-            <a href="/login" className="text-blue-600 hover:underline">
-              Faça login
-            </a>
-          </p>
-        </div>
-      </div>
+            <Button variant="link" className="p-0 h-auto" asChild>
+              <a href="/login">Faça login</a>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

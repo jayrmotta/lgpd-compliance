@@ -1,5 +1,52 @@
 import '@testing-library/jest-dom';
 
+// Suppress known React warnings from Radix UI components in tests
+const originalError = console.error;
+console.error = (...args) => {
+  // Suppress the sideOffset prop warning from Radix UI
+  if (args[0] && typeof args[0] === 'string' && args[0].includes('sideOffset')) {
+    return;
+  }
+  // Suppress other known React warnings that are harmless in tests
+  if (args[0] && typeof args[0] === 'string' && args[0].includes('React does not recognize')) {
+    return;
+  }
+  originalError.call(console, ...args);
+};
+
+// Mock ResizeObserver for JSDOM compatibility
+global.ResizeObserver = class ResizeObserver {
+  constructor(callback) {
+    this.callback = callback;
+  }
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
+// Mock pointer events for JSDOM compatibility (only when window is available)
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window.Element.prototype, 'hasPointerCapture', {
+    value: () => false,
+    writable: true,
+  });
+
+  Object.defineProperty(window.Element.prototype, 'setPointerCapture', {
+    value: () => {},
+    writable: true,
+  });
+
+  Object.defineProperty(window.Element.prototype, 'releasePointerCapture', {
+    value: () => {},
+    writable: true,
+  });
+
+  Object.defineProperty(window.Element.prototype, 'scrollIntoView', {
+    value: () => {},
+    writable: true,
+  });
+}
+
 // Mock Next.js server-side globals for testing
 if (typeof global.Request === 'undefined') {
   global.Request = class MockRequest {

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -54,83 +56,92 @@ export default function DashboardPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-900 text-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
         <div>Carregando...</div>
       </div>
     );
   }
+
   return (
-    <div data-testid="dashboard" className="min-h-screen bg-gray-900">
-      <header className="bg-gray-800 shadow-sm border-b border-gray-700">
+    <div data-testid="dashboard" className="min-h-screen bg-background">
+      <header className="bg-card shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <h1 className="text-xl font-semibold text-white">Painel de Conformidade LGPD</h1>
-            <button 
+            <h1 className="text-xl font-semibold text-foreground">
+              Painel de Conformidade LGPD
+            </h1>
+            <Button 
               data-testid="logout-button"
-              className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
+              variant="destructive"
               onClick={handleLogout}
             >
               Sair
-            </button>
+            </Button>
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          <div data-testid="welcome-message" className="bg-gray-800 overflow-hidden shadow rounded-lg">
-            <div className="px-4 py-5 sm:p-6">
-              <h2 className="text-lg font-medium text-white mb-4">
-                Bem-vindo ao Sistema de Conformidade LGPD
-              </h2>
-              <p className="text-sm text-gray-300 mb-4">
+          <Card data-testid="welcome-message" className="mb-6">
+            <CardHeader>
+              <CardTitle>Bem-vindo ao Sistema de Conformidade LGPD</CardTitle>
+              <CardDescription>
                 Logado como: {userEmail}
-              </p>
-              <p className="text-gray-300">
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">
                 Aqui você pode gerenciar suas solicitações LGPD de forma segura e eficiente.
               </p>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
           
-          <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            <div 
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <Card 
               data-testid="request-data-access"
-              className="bg-gray-800 overflow-hidden shadow rounded-lg cursor-pointer hover:bg-gray-700 hover:shadow-lg transition-all duration-200"
+              className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:bg-accent/50"
               onClick={() => router.push('/lgpd-requests?type=data_access')}
             >
-              <div className="px-4 py-5 sm:p-6">
-                <h3 className="text-lg font-medium text-white">Solicitar Dados</h3>
-                <p className="mt-2 text-sm text-gray-300">
+              <CardHeader>
+                <CardTitle>Solicitar Dados</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">
                   Solicite acesso aos seus dados pessoais armazenados.
                 </p>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
             
-            <div 
+            <Card 
               data-testid="request-data-deletion"
-              className="bg-gray-800 overflow-hidden shadow rounded-lg cursor-pointer hover:bg-gray-700 hover:shadow-lg transition-all duration-200"
+              className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:bg-accent/50"
               onClick={() => router.push('/lgpd-requests?type=data_deletion')}
             >
-              <div className="px-4 py-5 sm:p-6">
-                <h3 className="text-lg font-medium text-white">Excluir Dados</h3>
-                <p className="mt-2 text-sm text-gray-300">
+              <CardHeader>
+                <CardTitle>Excluir Dados</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">
                   Solicite a exclusão dos seus dados pessoais.
                 </p>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
             
-            <div 
+            <Card 
               data-testid="request-data-correction"
-              className="bg-gray-800 overflow-hidden shadow rounded-lg cursor-pointer hover:bg-gray-700 hover:shadow-lg transition-all duration-200"
+              className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:bg-accent/50"
               onClick={() => router.push('/lgpd-requests?type=data_correction')}
             >
-              <div className="px-4 py-5 sm:p-6">
-                <h3 className="text-lg font-medium text-white">Corrigir Dados</h3>
-                <p className="mt-2 text-sm text-gray-300">
+              <CardHeader>
+                <CardTitle>Corrigir Dados</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">
                   Solicite a correção de dados pessoais incorretos.
                 </p>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </main>
