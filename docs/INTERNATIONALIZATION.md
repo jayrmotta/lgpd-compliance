@@ -65,7 +65,7 @@ Maps UI text keys to Portuguese translations (keeping well-known English terms):
 ```typescript
 export const uiMessages: TranslationMap = {
   // Dashboard
-  'dashboard_unlock_title': '🔐 Desbloquear Dashboard da Empresa',
+  'dashboard_unlock_title': '🔐 Desbloquear Dashboard',
   'dashboard_unlock_button': 'Desbloquear Dashboard',
   
   // Common terms (kept in English as they are well-known)

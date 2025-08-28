@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-client";
 import { TopBar } from "@/components/layout/top-bar";
+import { getIconBorderColor } from "@/lib/utils";
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -18,18 +19,14 @@ export default function HomePage() {
 
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-16 text-center">
-        <Badge className="mb-4" variant="secondary">
-          <Lock className="h-3 w-3 mr-1" />
-          Criptografia Ponta-a-Ponta
-        </Badge>
         <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent leading-[1.1] py-2">
-          Conformidade LGPD
+          Seus Dados,
           <br />
-          com Segurança Total
+          Seu Controle
         </h1>
         <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-          Plataforma profissional para gestão de direitos de proteção de dados com criptografia de conhecimento zero e
-          auditoria completa.
+          Exerça seus direitos LGPD de forma fácil e segura. <br/> 
+          Veja, corrija ou exclua seus dados pessoais quando quiser.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link href={user ? "/dashboard" : "/register"}>
@@ -51,7 +48,7 @@ export default function HomePage() {
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="border-2 hover:border-primary/50 transition-colors">
+          <Card className={`border-2 transition-colors ${getIconBorderColor('text-primary')}`}>
             <CardHeader>
               <FileText className="h-8 w-8 text-primary mb-2" />
               <CardTitle>Acesso a Dados</CardTitle>
@@ -66,7 +63,7 @@ export default function HomePage() {
             </CardContent>
           </Card>
 
-          <Card className="border-2 hover:border-primary/50 transition-colors">
+          <Card className={`border-2 transition-colors ${getIconBorderColor('text-destructive')}`}>
             <CardHeader>
               <Shield className="h-8 w-8 text-destructive mb-2" />
               <CardTitle>Exclusão de Dados</CardTitle>
@@ -81,7 +78,7 @@ export default function HomePage() {
             </CardContent>
           </Card>
 
-          <Card className="border-2 hover:border-primary/50 transition-colors">
+          <Card className={`border-2 transition-colors ${getIconBorderColor('text-accent')}`}>
             <CardHeader>
               <CheckCircle className="h-8 w-8 text-accent mb-2" />
               <CardTitle>Correção de Dados</CardTitle>
@@ -96,7 +93,7 @@ export default function HomePage() {
             </CardContent>
           </Card>
 
-          <Card className="border-2 hover:border-primary/50 transition-colors">
+          <Card className={`border-2 transition-colors ${getIconBorderColor('text-chart-4')}`}>
             <CardHeader>
               <Users className="h-8 w-8 text-chart-4 mb-2" />
               <CardTitle>Portabilidade</CardTitle>

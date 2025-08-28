@@ -40,36 +40,34 @@ export const serverMessages: TranslationMap = {
 // UI text translations (keeping only well-known English terms)
 export const uiMessages: TranslationMap = {
   // Dashboard
-  'dashboard_unlock_title': '🔐 Desbloquear Dashboard da Empresa',
+  'dashboard_unlock_title': '🔐 Desbloquear Dashboard',
   'dashboard_unlock_subtitle': 'Insira sua chave privada do gerenciador de senhas:',
   'dashboard_unlock_placeholder': 'Cole sua chave privada aqui...',
   'dashboard_unlock_note': 'Sua chave privada é processada localmente e nunca enviada aos nossos servidores.',
-  'dashboard_unlock_button': 'Desbloquear Dashboard',
+  'dashboard_unlock_button': 'Desbloquear',
   'dashboard_unlocking': 'Desbloqueando...',
-  'dashboard_locked_button': 'Bloquear Dashboard',
   'dashboard_unlocked_title': 'Dashboard Desbloqueado',
   'dashboard_unlocked_message': 'Sua chave privada é válida. Agora você pode descriptografar e visualizar solicitações LGPD.',
   
   // Requests
-  'requests_title': 'LGPD Requests',
-  'requests_loading': 'Loading requests...',
-  'requests_empty': 'No LGPD requests found.',
-  'requests_submitted': 'Submitted',
-  'requests_due': 'Due',
-  'requests_decrypted_content': '🔓 Decrypted Content:',
+  'requests_title': 'Solicitações LGPD',
+  'requests_loading': 'Carregando solicitações...',
+  'requests_empty': 'Nenhuma solicitação LGPD encontrada.',
+  'requests_submitted': 'Enviada',
+  'requests_due': 'Prazo',
+  'requests_decrypted_content': '🔓 Conteúdo Descriptografado:',
   'requests_user_email': 'Email do Usuário:',
-  'requests_reason': 'Reason:',
-  'requests_description': 'Description:',
+  'requests_reason': 'Motivo:',
+  'requests_description': 'Descrição:',
   'requests_process_button': 'Processar Solicitação',
   'requests_complete_button': 'Marcar como Concluída',
-  'requests_download_button': 'Baixar Dados',
   'requests_decrypt_failed': '❌ Falha ao descriptografar esta solicitação',
   
   // Messages
   'message_success_processing': 'Solicitação marcada como em processamento com sucesso!',
   'message_success_completed': 'Solicitação marcada como concluída com sucesso!',
   'message_error_update': 'Erro ao atualizar status da solicitação:',
-  'message_error_download': 'Erro ao baixar dados da solicitação',
+
   
   // Validation errors
   'error_private_key_required': 'Por favor, insira sua chave privada',
@@ -80,16 +78,6 @@ export const uiMessages: TranslationMap = {
   'error_company_public_key_missing': 'Chave pública da empresa não encontrada. Por favor, recarregue a página.',
   'error_fetch_metadata': 'Falha ao carregar metadados da empresa',
   'error_fetch_requests': 'Falha ao carregar solicitações LGPD:',
-  
-  // Common terms (kept in English as they are well-known)
-  'company_dashboard': 'Company Dashboard',
-  'key_setup': 'Key Setup',
-  'logout': 'Logout',
-  'loading': 'Loading',
-  'error': 'Error',
-  'success': 'Success',
-  'info': 'Info',
-  'close': '✕',
 };
 
 // Function to get translation for server response codes

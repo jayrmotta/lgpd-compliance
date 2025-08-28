@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { RefreshCw, AlertCircle } from 'lucide-react';
 
 export interface User {
   userId: string;
@@ -135,24 +136,33 @@ export function withAuth<T extends object>(
 
     if (loading) {
       return (
-        <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-          <div className="text-white">Verificando autenticação...</div>
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="text-center">
+            <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
+            <p className="text-muted-foreground">Verificando autenticação...</p>
+          </div>
         </div>
       );
     }
 
     if (error) {
       return (
-        <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-          <div className="text-red-400">Erro de autenticação: {error}</div>
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="text-center">
+            <AlertCircle className="h-8 w-8 mx-auto mb-4 text-destructive" />
+            <p className="text-destructive">Erro de autenticação: {error}</p>
+          </div>
         </div>
       );
     }
 
     if (!user && requiredRole) {
       return (
-        <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-          <div className="text-white">Redirecionando para login...</div>
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="text-center">
+            <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
+            <p className="text-muted-foreground">Redirecionando para login...</p>
+          </div>
         </div>
       );
     }

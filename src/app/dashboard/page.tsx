@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react"
 import { useRouter } from 'next/navigation';
-import { FileText, Trash2, Edit, Download, Plus, Clock, CheckCircle, AlertCircle, RefreshCw, Eye } from "lucide-react"
+import { FileText, Trash2, Edit, Plus, Clock, CheckCircle, AlertCircle, RefreshCw, Eye } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { authenticatedFetch } from "@/lib/auth-fetch"
 import { TopBar } from "@/components/layout/top-bar"
 import { useAuth } from "@/lib/auth-client"
+import { getIconBorderColor } from "@/lib/utils"
 
 interface LGPDRequest {
   id: string;
@@ -145,7 +146,7 @@ function DashboardContent() {
       id: 'data_portability',
       type: 'Solicitação de Portabilidade de Dados',
       description: 'Exportar seus dados em formato portável',
-      icon: Download,
+      icon: FileText,
       color: 'bg-green-500'
     }
   ];
@@ -191,7 +192,7 @@ function DashboardContent() {
                 return (
                   <Card 
                     key={request.id}
-                    className="cursor-pointer hover:shadow-md transition-shadow border-2 hover:border-primary"
+                    className={`cursor-pointer hover:shadow-md transition-shadow border-2 ${getIconBorderColor(request.color)}`}
                     data-testid={`request-type-${request.id.replace('_', '-')}`}
                   >
                     <CardContent className="pt-6">
@@ -279,7 +280,7 @@ function DashboardContent() {
                     <TableHead>Status</TableHead>
                     <TableHead>Criada em</TableHead>
                     <TableHead>Prazo</TableHead>
-                    <TableHead>Ações</TableHead>
+
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -295,20 +296,7 @@ function DashboardContent() {
                       </TableCell>
                       <TableCell>{formatDate(request.created_at)}</TableCell>
                       <TableCell>{formatDate(request.response_due_at)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="sm">
-                            <FileText className="h-4 w-4" />
-                          </Button>
-                          {request.status.toLowerCase() === "completed" || 
-                           request.status.toLowerCase() === "concluída" || 
-                           request.status.toLowerCase() === "concluida" ? (
-                            <Button variant="ghost" size="sm">
-                              <Download className="h-4 w-4" />
-                            </Button>
-                          ) : null}
-                        </div>
-                      </TableCell>
+
                     </TableRow>
                   ))}
                 </TableBody>

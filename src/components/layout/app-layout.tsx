@@ -6,7 +6,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { LogOut, User, Settings, Bell, Home, Shield, List, Building2, Cog, UserCheck } from 'lucide-react';
+import { LogOut, User, Settings, Bell, Home, Shield, Building2, Cog, UserCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -38,15 +38,9 @@ export function AppLayout({ children, user }: AppLayoutProps) {
     },
     {
       title: "LGPD Requests",
-      href: "/dashboard",
+      href: "/create-request",
       icon: Shield,
       label: "LGPD Requests",
-    },
-    {
-      title: "My Requests",
-      href: "/my-requests",
-      icon: List,
-      label: "My Requests",
     },
     {
       title: "Company Dashboard",

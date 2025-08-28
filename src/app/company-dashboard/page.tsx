@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { Download, CheckCircle, Clock, AlertCircle, X } from 'lucide-react';
+import { CheckCircle, Clock, AlertCircle, X } from 'lucide-react';
 import { TopBar } from '@/components/layout/top-bar';
 
 interface EncryptedRequest {
@@ -304,39 +304,7 @@ function CompanyDashboardPage() {
     }
   };
 
-  const downloadRequestData = (requestId: string, data: DecryptedData) => {
-    try {
-      // Create a formatted text file with the decrypted data
-      const content = `LGPD Request Data
-==================
-Request ID: ${data.requestId}
-Type: ${formatRequestType(data.type)}
-Date: ${formatDate(data.timestamp)}
-User Email: ${data.userEmail}
-CPF: ${data.cpf}
 
-Reason:
-${data.reason}
-
-Description:
-${data.description}
-`;
-
-      // Create a blob and download it
-      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `lgpd-request-${requestId}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Failed to download request data:', error);
-      setMessage({ type: 'error', text: getUIMessage('message_error_download') });
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -526,14 +494,7 @@ ${data.description}
                                         {getUIMessage('requests_complete_button')}
                                       </Button>
                                     )}
-                                    <Button 
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => downloadRequestData(request.id, decrypted)}
-                                    >
-                                      <Download className="h-4 w-4 mr-2" />
-                                      {getUIMessage('requests_download_button')}
-                                    </Button>
+
                                   </div>
                                 </div>
                               </CardContent>

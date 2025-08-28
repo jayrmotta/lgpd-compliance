@@ -169,7 +169,7 @@ Em seu dashboard, Ana vê uma mensagem de boas-vindas e três opções principai
 
 ### **Capítulo 6: Criando uma Solicitação LGPD**
 
-Ana clica em "Solicitar Dados" que a leva para `/lgpd-requests?type=data_access`. O sistema primeiro realiza uma verificação de compatibilidade do navegador e mostra "✓ Seu navegador é compatível".
+Ana clica em "Solicitar Dados" que a leva para `/create-request?type=data_access`. O sistema primeiro realiza uma verificação de compatibilidade do navegador e mostra "✓ Seu navegador é compatível".
 
 Ana preenche sua solicitação:
 - **Motivo**: "Quero verificar meus dados pessoais" 
@@ -232,7 +232,7 @@ João compila uma resposta abrangente e clica em "Marcar como Concluída". O sis
 
 ### **Capítulo 11: Titular de Dados Recebe Resposta**
 
-Ana faz login novamente na plataforma e visita `/my-requests` para verificar o status de sua solicitação. Ela vê que sua solicitação agora está marcada como "COMPLETED" com um indicador de status verde.
+Ana faz login novamente na plataforma e visita o dashboard para verificar o status de sua solicitação. Ela vê que sua solicitação agora está marcada como "COMPLETED" com um indicador de status verde.
 
 A TechCorp envia a Ana sua exportação completa de dados através de um canal seguro (separado da plataforma), cumprindo sua solicitação de acesso LGPD dentro do prazo obrigatório de 15 dias.
 
@@ -285,8 +285,7 @@ src/
 │   ├── admin/             # Painel administrativo
 │   ├── login/             # Página de login
 │   ├── register/          # Página de registro  
-│   ├── lgpd-requests/     # Criação de solicitação LGPD
-│   ├── my-requests/       # Histórico de solicitações
+│   ├── create-request/    # Criação de solicitação LGPD
 │   └── logout/            # Página de logout
 ├── lib/                   # Utilitários principais
 │   ├── auth-middleware.ts # Autenticação JWT
