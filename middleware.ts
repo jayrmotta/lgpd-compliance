@@ -46,7 +46,7 @@ export function middleware(request: NextRequest) {
   }
 
   // Protect user pages - require authentication for data subjects or any authenticated user
-  if (pathname.startsWith('/dashboard') || pathname.startsWith('/my-requests') || pathname.startsWith('/lgpd-requests')) {
+  if (pathname.startsWith('/dashboard') || pathname.startsWith('/my-requests') || pathname.startsWith('/create-request')) {
     const token = request.cookies.get('authToken')?.value
     
     if (!token) {
@@ -127,7 +127,7 @@ export const config = {
     '/company-setup/:path*',
     '/dashboard/:path*',
     '/my-requests/:path*',
-    '/lgpd-requests/:path*',
+    '/create-request/:path*',
     '/admin/:path*'
   ]
 }

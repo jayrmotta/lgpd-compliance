@@ -12,7 +12,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ERROR_MESSAGES } from '@/lib/message-constants';
-import { withAuth, useAuth } from '@/lib/auth-client';
+import { withAuth } from '@/lib/auth-client';
+import { TopBar } from '@/components/layout/top-bar';
 
 // Form validation schema
 const createUserSchema = z.object({
@@ -34,7 +35,6 @@ const createUserSchema = z.object({
 type CreateUserFormData = z.infer<typeof createUserSchema>;
 
 function AdminPage() {
-  const { logout } = useAuth(); // Middleware handles super_admin authorization
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -91,23 +91,7 @@ function AdminPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-card shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <h1 className="text-xl font-semibold text-foreground">
-              Admin Panel - LGPD Platform
-            </h1>
-            <div className="flex items-center space-x-4">
-              <Button variant="link" asChild>
-                <a href="/dashboard">Dashboard</a>
-              </Button>
-              <Button variant="outline" onClick={logout}>
-                Logout
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <TopBar title="Configuração da Plataforma" />
 
       <main className="max-w-2xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0 space-y-6">

@@ -127,3 +127,17 @@
     @apply bg-background text-foreground font-sans;
   }
 }
+
+/* Rainbow Gem Effect */
+.rainbow-diamond {
+  color: #ff6b35;
+  filter: saturate(2.5) brightness(1.4) drop-shadow(0 0 8px rgba(255, 107, 53, 0.5));
+}
+
+.rainbow-diamond svg {
+  fill: currentColor;
+}
+
+.rainbow-diamond path {
+  fill: currentColor;
+}

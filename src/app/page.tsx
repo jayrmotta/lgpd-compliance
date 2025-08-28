@@ -5,27 +5,16 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
+import { useAuth } from "@/lib/auth-client";
+import { TopBar } from "@/components/layout/top-bar";
 
 export default function HomePage() {
+  const { user } = useAuth();
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
-      {/* Header */}
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Shield className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold">LGPD Platform</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link href="/login">
-              <Button variant="ghost">Entrar</Button>
-            </Link>
-            <Link href="/register">
-              <Button>Criar Conta</Button>
-            </Link>
-          </div>
-        </div>
-      </header>
+      {/* Top Bar */}
+      <TopBar />
 
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-16 text-center">
@@ -33,7 +22,7 @@ export default function HomePage() {
           <Lock className="h-3 w-3 mr-1" />
           Criptografia Ponta-a-Ponta
         </Badge>
-        <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+        <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent leading-[1.1] py-2">
           Conformidade LGPD
           <br />
           com Segurança Total
@@ -43,22 +32,17 @@ export default function HomePage() {
           auditoria completa.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link href="/register">
+          <Link href={user ? "/dashboard" : "/register"}>
             <Button size="lg" className="w-full sm:w-auto">
-              Exercer Meus Direitos
+              {user ? "Acessar Dashboard" : "Exercer Meus Direitos"}
               <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </Link>
-          <Link href="/company-setup">
-            <Button size="lg" variant="outline" className="w-full sm:w-auto bg-transparent">
-              Configurar Empresa
             </Button>
           </Link>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="container mx-auto px-4 py-16">
+      <section className="container mx-auto px-4 py-8">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold mb-4">Seus Direitos LGPD</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
@@ -172,7 +156,7 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="border-t bg-background py-8">
         <div className="container mx-auto px-4 text-center text-muted-foreground">
-          <p>&copy; 2025 LGPD Platform. Todos os direitos reservados.</p>
+          <p>&copy; 2025 Prisma. Todos os direitos reservados.</p>
           <p className="mt-2 text-sm">Desenvolvido com foco em privacidade e conformidade LGPD</p>
         </div>
       </footer>

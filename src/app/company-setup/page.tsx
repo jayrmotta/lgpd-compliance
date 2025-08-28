@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { generateKeyPair, getKeyFingerprint } from '@/lib/crypto';
-import { withAuth, useAuth } from '@/lib/auth-client';
+import { withAuth } from '@/lib/auth-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,10 +12,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Shield, AlertTriangle, CheckCircle, Copy, Download, Key, Building2, ArrowLeft, Save } from 'lucide-react';
+import { Shield, AlertTriangle, CheckCircle, Copy, Download, Key, Building2, Save } from 'lucide-react';
+import { TopBar } from '@/components/layout/top-bar';
 
 function CompanySetupPage() {
-  const { user, logout } = useAuth();
   const router = useRouter();
   const [companyName, setCompanyName] = useState('');
   const [keyPair, setKeyPair] = useState<{ publicKey: string; secretKey: string } | null>(null);
@@ -110,27 +110,7 @@ function CompanySetupPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <h1 className="text-xl font-semibold">Configuração da Empresa - Chaves de Criptografia</h1>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-muted-foreground">
-                {user?.email}
-              </span>
-              <Button variant="ghost" asChild>
-                <a href="/company-dashboard">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Voltar ao Dashboard
-                </a>
-              </Button>
-              <Button variant="outline" onClick={logout}>
-                Logout
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <TopBar title="Configuração da Empresa" />
 
       <main className="container mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto space-y-6">

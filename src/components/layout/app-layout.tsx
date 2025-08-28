@@ -38,7 +38,7 @@ export function AppLayout({ children, user }: AppLayoutProps) {
     },
     {
       title: "LGPD Requests",
-      href: "/lgpd-requests",
+      href: "/dashboard",
       icon: Shield,
       label: "LGPD Requests",
     },

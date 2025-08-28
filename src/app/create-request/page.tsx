@@ -11,8 +11,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, AlertCircle, Shield, CreditCard, ArrowLeft, Send, Eye, Trash2, Edit, Download } from 'lucide-react';
+import { TopBar } from '@/components/layout/top-bar';
 
-function LGPDRequestsContent() {
+function CreateRequestContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -22,9 +23,6 @@ function LGPDRequestsContent() {
   const [showVerification, setShowVerification] = useState(false);
   const [cpf, setCpf] = useState('');
   const [identityVerified, setIdentityVerified] = useState(false);
-  const [securityProcessing] = useState(false);
-  const [securityError] = useState(false);
-  const [browserCompatible, setBrowserCompatible] = useState(true);
   const [verificationError, setVerificationError] = useState('');
   const [formError, setFormError] = useState('');
   const [submittingRequest, setSubmittingRequest] = useState(false);
@@ -50,6 +48,46 @@ function LGPDRequestsContent() {
     }
   };
 
+  const getRequestTypeInfo = () => {
+    switch (selectedRequestType) {
+      case 'data_access':
+        return {
+          title: 'Solicitação de Acesso aos Dados',
+          description: 'Visualizar quais dados pessoais possuímos',
+          icon: Eye,
+          color: 'bg-blue-500'
+        };
+      case 'data_deletion':
+        return {
+          title: 'Solicitação de Exclusão de Dados',
+          description: 'Excluir todos os seus dados pessoais',
+          icon: Trash2,
+          color: 'bg-red-500'
+        };
+      case 'data_correction':
+        return {
+          title: 'Solicitação de Correção de Dados',
+          description: 'Corrigir dados pessoais incorretos',
+          icon: Edit,
+          color: 'bg-yellow-500'
+        };
+      case 'data_portability':
+        return {
+          title: 'Solicitação de Portabilidade de Dados',
+          description: 'Exportar seus dados em formato portável',
+          icon: Download,
+          color: 'bg-green-500'
+        };
+      default:
+        return {
+          title: 'Solicitação LGPD',
+          description: 'Solicitação de dados pessoais',
+          icon: Shield,
+          color: 'bg-gray-500'
+        };
+    }
+  };
+
   useEffect(() => {
     const isLoggedIn = localStorage.getItem('isLoggedIn');
     const email = localStorage.getItem('userEmail');
@@ -57,60 +95,20 @@ function LGPDRequestsContent() {
     if (isLoggedIn === 'true' && email) {
       setIsAuthenticated(true);
       
-      // Check browser compatibility
-      const isCompatible = !!(window.crypto && window.crypto.subtle);
-      setBrowserCompatible(isCompatible);
-      
-      // Pre-select request type from URL parameter
+      // Get request type from URL parameter
       const typeParam = searchParams.get('type');
       if (typeParam && ['data_access', 'data_deletion', 'data_correction', 'data_portability'].includes(typeParam)) {
         setSelectedRequestType(typeParam);
+      } else {
+        // If no valid type, redirect back to dashboard
+        router.push('/dashboard');
       }
     } else {
-      router.push('/login?redirect=lgpd-requests&message=auth-required');
+      router.push('/login?redirect=create-request&message=auth-required');
     }
   }, [router, searchParams]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('userEmail');
-    router.push('/login');
-  };
 
-  const requestTypes = [
-    {
-      id: 'data_access',
-      type: 'Solicitação de Acesso aos Dados',
-      description: 'Visualizar quais dados pessoais possuímos',
-      icon: Eye,
-      color: 'bg-blue-500'
-    },
-    {
-      id: 'data_deletion',
-      type: 'Solicitação de Exclusão de Dados', 
-      description: 'Excluir todos os seus dados pessoais',
-      icon: Trash2,
-      color: 'bg-red-500'
-    },
-    {
-      id: 'data_correction',
-      type: 'Solicitação de Correção de Dados',
-      description: 'Corrigir dados pessoais incorretos',
-      icon: Edit,
-      color: 'bg-yellow-500'
-    },
-    {
-      id: 'data_portability',
-      type: 'Solicitação de Portabilidade de Dados',
-      description: 'Exportar seus dados em formato portável',
-      icon: Download,
-      color: 'bg-green-500'
-    }
-  ];
-
-  const handleRequestTypeSelection = (typeId: string) => {
-    setSelectedRequestType(typeId);
-  };
 
   const handleSubmitRequest = () => {
     if (!selectedRequestType || !reason || !description) {
@@ -165,8 +163,6 @@ function LGPDRequestsContent() {
     }
   };
 
-
-
   const handleFinalSubmit = useCallback(async () => {
     setSubmittingRequest(true);
     setSubmissionError('');
@@ -207,7 +203,7 @@ function LGPDRequestsContent() {
       
       // Redirect quickly after success
       setTimeout(() => {
-        router.push('/my-requests');
+        router.push('/dashboard');
       }, 1500);
 
     } catch (error) {
@@ -240,7 +236,7 @@ function LGPDRequestsContent() {
         } catch (error) {
           console.error('Auto PIX verification error:', error);
         }
-      }, 5000); // Auto-verify after 8 seconds in development
+      }, 5000); // Auto-verify after 5 seconds in development
       
       return () => clearTimeout(timer);
     }
@@ -253,7 +249,7 @@ function LGPDRequestsContent() {
           <CardContent className="pt-6">
             <div className="text-center">
               <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">Por favor, faça login para enviar solicitações LGPD</p>
+              <p className="text-muted-foreground">Por favor, faça login para criar solicitações LGPD</p>
             </div>
           </CardContent>
         </Card>
@@ -261,110 +257,29 @@ function LGPDRequestsContent() {
     );
   }
 
+  const requestTypeInfo = getRequestTypeInfo();
+  const IconComponent = requestTypeInfo.icon;
+
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <h1 className="text-xl font-semibold">Solicitações LGPD</h1>
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" asChild>
-                <a href="/dashboard">Dashboard</a>
-              </Button>
-              <Button variant="destructive" onClick={handleLogout}>
-                Sair
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <TopBar title="Criar Solicitação LGPD" />
 
       <main className="container mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto space-y-6">
-          {/* Browser Compatibility Check */}
-          {!browserCompatible && (
-            <Alert variant="destructive" data-testid="browser-check">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                <div className="space-y-1">
-                  <p className="font-medium">❌ Seu navegador precisa ser atualizado</p>
-                  <p className="text-sm text-muted-foreground">Use uma versão mais recente do Chrome, Firefox ou Safari</p>
+          {/* Request Type Header */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center space-x-3">
+                <div className={`p-3 rounded-full ${requestTypeInfo.color} text-white`}>
+                  <IconComponent className="h-6 w-6" />
                 </div>
-              </AlertDescription>
-            </Alert>
-          )}
-          
-          {browserCompatible && (
-            <Alert data-testid="browser-check">
-              <CheckCircle className="h-4 w-4" />
-              <AlertDescription>
-                <div className="flex items-center space-x-2">
-                  <span className="font-medium">✓ Seu navegador é compatível</span>
+                <div>
+                  <CardTitle>{requestTypeInfo.title}</CardTitle>
+                  <CardDescription>{requestTypeInfo.description}</CardDescription>
                 </div>
-              </AlertDescription>
-            </Alert>
-          )}
-          
-          {/* Security Processing Status */}
-          {securityProcessing && (
-            <Alert>
-              <Shield className="h-4 w-4" />
-              <AlertDescription>
-                <p>Sua solicitação está sendo protegida</p>
-                <p>✓ Dados protegidos com segurança</p>
-                <p>Suas informações pessoais estão seguras</p>
-              </AlertDescription>
-            </Alert>
-          )}
-          
-          {securityError && (
-            <Alert variant="destructive" data-testid="security-error">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                <p>❌ Falha na proteção dos dados - solicitação não enviada</p>
-                <p className="text-sm">Tente novamente ou entre em contato com o suporte</p>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Request Type Selection */}
-          {!selectedRequestType && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Selecione o tipo de solicitação LGPD</CardTitle>
-                <CardDescription>
-                  Escolha o tipo de solicitação que deseja fazer conforme seus direitos LGPD
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {requestTypes.map((request) => {
-                    const IconComponent = request.icon;
-                    return (
-                      <Card 
-                        key={request.id}
-                        className="cursor-pointer hover:shadow-md transition-shadow border-2 hover:border-primary"
-                        data-testid={`request-type-${request.id.replace('_', '-')}`}
-                        onClick={() => handleRequestTypeSelection(request.id)}
-                      >
-                        <CardContent className="pt-6">
-                          <div className="flex items-center space-x-3">
-                            <div className={`p-2 rounded-full ${request.color} text-white`}>
-                              <IconComponent className="h-5 w-5" />
-                            </div>
-                            <div>
-                              <h3 className="font-medium">{request.type}</h3>
-                              <p className="text-sm text-muted-foreground">{request.description}</p>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+            </CardHeader>
+          </Card>
 
           {/* Error Messages */}
           {formError && (
@@ -384,7 +299,7 @@ function LGPDRequestsContent() {
           )}
 
           {/* Request Details Form */}
-          {selectedRequestType && !showVerification && (
+          {!showVerification && (
             <Card>
               <CardHeader>
                 <CardTitle>Detalhes da Solicitação</CardTitle>
@@ -418,17 +333,19 @@ function LGPDRequestsContent() {
                 <div className="flex justify-between pt-4">
                   <Button 
                     variant="outline" 
-                    onClick={() => setSelectedRequestType('')}
+                    asChild
                   >
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Voltar
+                    <a href="/dashboard">
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      Cancelar
+                    </a>
                   </Button>
                   <Button 
                     data-testid="submit-request"
                     onClick={handleSubmitRequest}
                   >
                     <Send className="h-4 w-4 mr-2" />
-                    Enviar Solicitação
+                    Continuar
                   </Button>
                 </div>
               </CardContent>
@@ -662,22 +579,21 @@ function LGPDRequestsContent() {
               </CardContent>
             </Card>
           )}
-
-
         </div>
       </main>
     </div>
   );
 }
 
-export default function LGPDRequestsPage() {
+export default function CreateRequestPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-muted-foreground">Carregando...</div>
       </div>
     }>
-      <LGPDRequestsContent />
+      <CreateRequestContent />
     </Suspense>
   );
 }
+

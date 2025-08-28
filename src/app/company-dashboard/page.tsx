@@ -11,7 +11,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { Download, Lock, CheckCircle, Clock, AlertCircle, X } from 'lucide-react';
+import { Download, CheckCircle, Clock, AlertCircle, X } from 'lucide-react';
+import { TopBar } from '@/components/layout/top-bar';
 
 interface EncryptedRequest {
   id: string;
@@ -39,7 +40,7 @@ interface DecryptedData {
 }
 
 function CompanyDashboardPage() {
-  const { user, logout } = useAuth(); // Middleware handles admin/employee authorization
+  const { user } = useAuth(); // Middleware handles admin/employee authorization
   const [privateKey, setPrivateKey] = useState('');
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [requests, setRequests] = useState<EncryptedRequest[]>([]);
@@ -339,42 +340,7 @@ ${data.description}
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <h1 className="text-xl font-semibold text-foreground">
-              {getUIMessage('company_dashboard')}
-            </h1>
-            <div className="flex items-center space-x-4">
-              <span className="text-muted-foreground text-sm">
-                {user?.email}
-              </span>
-              <Button variant="ghost" asChild>
-                <a href="/company-setup">
-                  {getUIMessage('key_setup')}
-                </a>
-              </Button>
-              {isUnlocked && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => {
-                    setIsUnlocked(false);
-                    setPrivateKey('');
-                    setDecryptedData({});
-                  }}
-                >
-                  <Lock className="h-4 w-4 mr-2" />
-                  {getUIMessage('dashboard_locked_button')}
-                </Button>
-              )}
-              <Button variant="outline" size="sm" onClick={logout}>
-                {getUIMessage('logout')}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <TopBar title="Dashboard da Empresa" />
 
       <main className="container mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <div className="space-y-6">

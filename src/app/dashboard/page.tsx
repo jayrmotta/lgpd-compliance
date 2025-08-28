@@ -1,15 +1,16 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter } from 'next/navigation';
-import { Shield, FileText, Trash2, Edit, Download, Plus, Clock, CheckCircle, AlertCircle, RefreshCw } from "lucide-react"
+import { FileText, Trash2, Edit, Download, Plus, Clock, CheckCircle, AlertCircle, RefreshCw, Eye } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import Link from "next/link"
 import { authenticatedFetch } from "@/lib/auth-fetch"
+import { TopBar } from "@/components/layout/top-bar"
+import { useAuth } from "@/lib/auth-client"
 
 interface LGPDRequest {
   id: string;
@@ -21,39 +22,18 @@ interface LGPDRequest {
   response_due_at: string;
 }
 
-export default function DashboardPage() {
+function DashboardContent() {
   const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userEmail, setUserEmail] = useState('');
+  const { user, loading: authLoading } = useAuth();
   const [requests, setRequests] = useState<LGPDRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const checkAuth = () => {
-      const isLoggedIn = localStorage.getItem('isLoggedIn');
-      const email = localStorage.getItem('userEmail');
-      
-      if (isLoggedIn === 'true' && email) {
-        setIsAuthenticated(true);
-        setUserEmail(email);
-        loadUserRequests();
-      } else {
-        setIsAuthenticated(false);
-        router.push('/login');
-      }
-    };
-
-    checkAuth();
-    
-    // Check authentication on window focus (prevents access after logout in another tab)
-    const handleFocus = () => checkAuth();
-    window.addEventListener('focus', handleFocus);
-    
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-    };
-  }, [router]);
+    if (user && !authLoading) {
+      loadUserRequests();
+    }
+  }, [user, authLoading]);
 
   const loadUserRequests = async () => {
     try {
@@ -75,25 +55,6 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Check authentication on every page visit
-  useEffect(() => {
-    const isLoggedIn = localStorage.getItem('isLoggedIn');
-    if (isLoggedIn !== 'true') {
-      setIsAuthenticated(false);
-      router.replace('/login');
-    }
-  }, [router]);
-
-  const handleLogout = () => {
-    // Clear all auth data
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('userEmail');
-    localStorage.removeItem('authToken');
-    setIsAuthenticated(false);
-    setUserEmail('');
-    router.push('/logout');
   };
 
   const getStatusIcon = (status: string) => {
@@ -157,7 +118,39 @@ export default function DashboardPage() {
     });
   };
 
-  if (!isAuthenticated) {
+  // Request types for navigation
+  const requestTypes = [
+    {
+      id: 'data_access',
+      type: 'Solicitação de Acesso aos Dados',
+      description: 'Visualizar quais dados pessoais possuímos',
+      icon: Eye,
+      color: 'bg-blue-500'
+    },
+    {
+      id: 'data_deletion',
+      type: 'Solicitação de Exclusão de Dados', 
+      description: 'Excluir todos os seus dados pessoais',
+      icon: Trash2,
+      color: 'bg-red-500'
+    },
+    {
+      id: 'data_correction',
+      type: 'Solicitação de Correção de Dados',
+      description: 'Corrigir dados pessoais incorretos',
+      icon: Edit,
+      color: 'bg-yellow-500'
+    },
+    {
+      id: 'data_portability',
+      type: 'Solicitação de Portabilidade de Dados',
+      description: 'Exportar seus dados em formato portável',
+      icon: Download,
+      color: 'bg-green-500'
+    }
+  ];
+
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
         <div>Carregando...</div>
@@ -165,28 +158,14 @@ export default function DashboardPage() {
     );
   }
 
+  if (!user) {
+    router.push('/login');
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
-      {/* Header */}
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Shield className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold">Prisma</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">{userEmail}</span>
-            <Link href="/my-requests">
-              <Button variant="outline" size="sm">
-                Minhas Solicitações
-              </Button>
-            </Link>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              Sair
-            </Button>
-          </div>
-        </div>
-      </header>
+      <TopBar title="Dashboard" />
 
       <div className="container mx-auto px-4 py-8">
         {/* Welcome Section */}
@@ -197,38 +176,43 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <Link href="/lgpd-requests?type=data_access">
-            <Card className="border-2 hover:border-primary/50 transition-colors cursor-pointer">
-              <CardHeader>
-                <FileText className="h-8 w-8 text-primary mb-2" />
-                <CardTitle>Solicitar Dados</CardTitle>
-                <CardDescription>Visualize todos os seus dados pessoais armazenados</CardDescription>
-              </CardHeader>
-            </Card>
-          </Link>
-
-          <Link href="/lgpd-requests?type=data_deletion">
-            <Card className="border-2 hover:border-destructive/50 transition-colors cursor-pointer">
-              <CardHeader>
-                <Trash2 className="h-8 w-8 text-destructive mb-2" />
-                <CardTitle>Excluir Dados</CardTitle>
-                <CardDescription>Solicite a remoção completa dos seus dados pessoais</CardDescription>
-              </CardHeader>
-            </Card>
-          </Link>
-
-          <Link href="/lgpd-requests?type=data_correction">
-            <Card className="border-2 hover:border-accent/50 transition-colors cursor-pointer">
-              <CardHeader>
-                <Edit className="h-8 w-8 text-accent mb-2" />
-                <CardTitle>Corrigir Dados</CardTitle>
-                <CardDescription>Atualize informações incorretas ou desatualizadas</CardDescription>
-              </CardHeader>
-            </Card>
-          </Link>
-        </div>
+        {/* Request Creation Section */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Tipos de Solicitação LGPD</CardTitle>
+            <CardDescription>
+              Escolha o tipo de solicitação que deseja fazer conforme seus direitos LGPD
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {requestTypes.map((request) => {
+                const IconComponent = request.icon;
+                return (
+                  <Card 
+                    key={request.id}
+                    className="cursor-pointer hover:shadow-md transition-shadow border-2 hover:border-primary"
+                    data-testid={`request-type-${request.id.replace('_', '-')}`}
+                  >
+                    <CardContent className="pt-6">
+                      <a href={`/create-request?type=${request.id}`} className="block">
+                        <div className="flex items-center space-x-3">
+                          <div className={`p-2 rounded-full ${request.color} text-white`}>
+                            <IconComponent className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <h3 className="font-medium">{request.type}</h3>
+                            <p className="text-sm text-muted-foreground">{request.description}</p>
+                          </div>
+                        </div>
+                      </a>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Recent Requests */}
         <Card>
@@ -249,12 +233,6 @@ export default function DashboardPage() {
                 <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                 Atualizar
               </Button>
-              <Link href="/lgpd-requests">
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nova Solicitação
-                </Button>
-              </Link>
             </div>
           </CardHeader>
           <CardContent>
@@ -285,12 +263,12 @@ export default function DashboardPage() {
               <div className="text-center py-8">
                 <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-muted-foreground mb-4">Você ainda não fez nenhuma solicitação LGPD.</p>
-                <Link href="/lgpd-requests">
-                  <Button>
+                <Button asChild>
+                  <a href="/create-request?type=data_access">
                     <Plus className="h-4 w-4 mr-2" />
                     Criar Nova Solicitação
-                  </Button>
-                </Link>
+                  </a>
+                </Button>
               </div>
             ) : (
               <Table>
@@ -341,4 +319,16 @@ export default function DashboardPage() {
       </div>
     </div>
   )
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-muted-foreground">Carregando...</div>
+      </div>
+    }>
+      <DashboardContent />
+    </Suspense>
+  );
 }

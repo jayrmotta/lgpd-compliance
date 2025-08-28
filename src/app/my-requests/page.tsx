@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Shield, AlertCircle, Plus, RefreshCw, FileText, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { TopBar } from '@/components/layout/top-bar';
 
 interface Request {
   id: string;
@@ -59,12 +60,6 @@ export default function MyRequestsPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('userEmail');
-    router.push('/login');
   };
 
   const getStatusColor = (status: string) => {
@@ -156,24 +151,7 @@ export default function MyRequestsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <h1 className="text-xl font-semibold">Minhas Solicitações</h1>
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" asChild>
-                <a href="/dashboard">Dashboard</a>
-              </Button>
-              <Button variant="ghost" asChild>
-                <a href="/lgpd-requests">Nova Solicitação</a>
-              </Button>
-              <Button variant="destructive" onClick={handleLogout}>
-                Sair
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <TopBar title="Minhas Solicitações" />
 
       <main className="container mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto space-y-6">
@@ -229,7 +207,7 @@ export default function MyRequestsPage() {
                   <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <p className="text-muted-foreground mb-4">Você ainda não fez nenhuma solicitação LGPD.</p>
                   <Button asChild>
-                    <a href="/lgpd-requests">
+                    <a href="/dashboard">
                       <Plus className="h-4 w-4 mr-2" />
                       Criar Nova Solicitação
                     </a>
@@ -296,7 +274,7 @@ export default function MyRequestsPage() {
           
           <div className="text-center">
             <Button asChild size="lg">
-              <a href="/lgpd-requests">
+              <a href="/dashboard">
                 <Plus className="h-4 w-4 mr-2" />
                 Criar Nova Solicitação LGPD
               </a>
