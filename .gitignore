@@ -66,6 +66,7 @@ Thumbs.db
 
 # MCP (Model Context Protocol) files
 .mcp/
+.playwright-mcp/
 mcp-*.json
 *.mcp
 mcp.config.*
