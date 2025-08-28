@@ -1,4 +1,4 @@
-// Playwright configuration for Cucumber tests
+// Playwright configuration for E2E tests
 module.exports = {
   // Global timeout for all operations
   timeout: 30000, // 30 seconds

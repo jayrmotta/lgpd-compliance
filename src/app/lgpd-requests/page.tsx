@@ -34,7 +34,6 @@ function LGPDRequestsContent() {
   const [pixTransactionId, setPixTransactionId] = useState('');
   const [showPixFlow, setShowPixFlow] = useState(false);
   const [pixVerified, setPixVerified] = useState(false);
-  const [pixInstructions, setPixInstructions] = useState('');
 
   const getSuccessMessage = () => {
     switch (selectedRequestType) {
@@ -157,13 +156,40 @@ function LGPDRequestsContent() {
 
       setPixQRCode(data.data.qrCode);
       setPixTransactionId(data.data.transactionId);
-      setPixInstructions(data.data.instructions);
       setShowPixFlow(true);
       setVerificationError('');
 
     } catch (error) {
       console.error('PIX QR Code generation error:', error);
       setVerificationError('Erro ao gerar QR Code PIX');
+    }
+  };
+
+  const handleDevVerification = async () => {
+    if (!cpf) {
+      setVerificationError('Por favor, insira o CPF');
+      return;
+    }
+    
+    // Validate CPF format
+    const cpfRegex = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/;
+    if (!cpfRegex.test(cpf) || cpf === '000.000.000-00') {
+      setVerificationError('CPF inválido. Use o formato 123.456.789-00');
+      return;
+    }
+
+    try {
+      setVerificationError('');
+      setIdentityVerified(true);
+      
+      // Automatically proceed to final submission after development verification
+      setTimeout(() => {
+        handleFinalSubmit();
+      }, 1000); // Brief delay to show verification success
+
+    } catch (error) {
+      console.error('Development verification error:', error);
+      setVerificationError('Erro na verificação de desenvolvimento');
     }
   };
 
@@ -287,8 +313,10 @@ function LGPDRequestsContent() {
             <Alert variant="destructive" data-testid="browser-check">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                <p>❌ Seu navegador precisa ser atualizado</p>
-                <p className="text-sm">Use uma versão mais recente do Chrome, Firefox ou Safari</p>
+                <div className="space-y-1">
+                  <p className="font-medium">❌ Seu navegador precisa ser atualizado</p>
+                  <p className="text-sm text-muted-foreground">Use uma versão mais recente do Chrome, Firefox ou Safari</p>
+                </div>
               </AlertDescription>
             </Alert>
           )}
@@ -296,7 +324,11 @@ function LGPDRequestsContent() {
           {browserCompatible && (
             <Alert data-testid="browser-check">
               <CheckCircle className="h-4 w-4" />
-              <AlertDescription>✓ Seu navegador é compatível</AlertDescription>
+              <AlertDescription>
+                <div className="flex items-center space-x-2">
+                  <span className="font-medium">✓ Seu navegador é compatível</span>
+                </div>
+              </AlertDescription>
             </Alert>
           )}
           
@@ -467,8 +499,8 @@ function LGPDRequestsContent() {
           {/* Identity Verification */}
           {showVerification && !identityVerified && !showPixFlow && (
             <Card data-testid="identity-verification-section">
-              <CardHeader>
-                <CardTitle className="flex items-center">
+              <CardHeader className="text-center">
+                <CardTitle className="flex items-center justify-center">
                   <Shield className="h-5 w-5 mr-2" />
                   Verificação de Identidade
                 </CardTitle>
@@ -476,10 +508,23 @@ function LGPDRequestsContent() {
                   Para garantir a segurança, você precisa verificar sua identidade via PIX
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="text-center p-4 bg-muted rounded-lg">
-                  <CreditCard className="h-8 w-8 mx-auto mb-2 text-primary" />
-                  <p className="text-sm text-muted-foreground">
+              <CardContent className="space-y-6">
+                {/* Development Mode Notice */}
+                {process.env.NODE_ENV === 'development' && (
+                  <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
+                    <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <AlertDescription>
+                      <div className="space-y-1">
+                        <p className="font-semibold text-blue-900 dark:text-blue-100">Modo de Desenvolvimento Ativo</p>
+                        <p className="text-sm text-blue-700 dark:text-blue-300">Em desenvolvimento, você pode usar verificação simplificada sem PIX.</p>
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
+                <div className="flex flex-col items-center p-6 bg-muted/50 rounded-lg">
+                  <CreditCard className="h-10 w-10 mb-3 text-primary" />
+                  <p className="text-sm font-medium text-muted-foreground">
                     🔐 Verificação PIX
                   </p>
                 </div>
@@ -512,14 +557,30 @@ function LGPDRequestsContent() {
                   />
                 </div>
                 
-                <Button 
-                  data-testid="generate-pix-qr"
-                  className="w-full"
-                  onClick={handlePixVerification}
-                >
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Gerar QR Code PIX (R$ 0,01)
-                </Button>
+                <div className="space-y-3">
+                  {/* Development Mode Button */}
+                  {process.env.NODE_ENV === 'development' && (
+                    <Button 
+                      data-testid="dev-verification"
+                      variant="outline"
+                      className="w-full"
+                      onClick={handleDevVerification}
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Verificação de Desenvolvimento
+                    </Button>
+                  )}
+                  
+                  {/* Production PIX Button */}
+                  <Button 
+                    data-testid="generate-pix-qr"
+                    className="w-full"
+                    onClick={handlePixVerification}
+                  >
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Gerar QR Code PIX (R$ 0,01)
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -527,45 +588,66 @@ function LGPDRequestsContent() {
           {/* PIX QR Code Flow */}
           {showPixFlow && !pixVerified && (
             <Card data-testid="pix-qr-section">
-              <CardHeader>
+              <CardHeader className="text-center">
                 <CardTitle>Pagamento PIX - Verificação de Identidade</CardTitle>
                 <CardDescription>
                   Escaneie o QR Code com seu aplicativo bancário para completar a verificação
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="text-center">
-                  <div className="bg-white p-4 rounded-lg inline-block mb-4">
-                    <Image 
-                      src={pixQRCode} 
-                      alt="QR Code PIX" 
-                      width={256}
-                      height={256}
-                      className="mx-auto"
-                      data-testid="pix-qr-image"
-                    />
+              <CardContent className="space-y-8">
+                <div className="flex flex-col items-center space-y-6">
+                  {/* QR Code Container */}
+                  <div className="flex flex-col items-center space-y-4">
+                    <div className="bg-white p-6 rounded-lg shadow-sm border">
+                      <Image 
+                        src={pixQRCode} 
+                        alt="QR Code PIX" 
+                        width={256}
+                        height={256}
+                        className="mx-auto"
+                        data-testid="pix-qr-image"
+                      />
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Badge variant="secondary" className="text-sm">
+                        💰 PIX R$ 0,01
+                      </Badge>
+                    </div>
                   </div>
                   
-                  <Badge variant="secondary" className="mb-4">
-                    💰 PIX R$ 0,01
-                  </Badge>
+                  {/* Instructions */}
+                  <div className="text-center max-w-md">
+                    <p className="text-sm text-muted-foreground">
+                      Escaneie o QR Code com seu app bancário e realize o pagamento de R$ 0,01 para verificar sua identidade via PIX
+                    </p>
+                  </div>
                   
-                  <p className="text-sm text-muted-foreground mb-4">
-                    {pixInstructions}
-                  </p>
-                  
-                  <Card className="bg-muted">
-                    <CardContent className="pt-4">
-                      <div className="text-sm space-y-1">
-                        <p><strong>ID da Transação:</strong> {pixTransactionId}</p>
-                        <p><strong>Valor:</strong> R$ 0,01</p>
-                        <p><strong>Descrição:</strong> Verificação LGPD</p>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  {/* Transaction Details */}
+                  <div className="w-full max-w-md">
+                    <Card className="bg-muted/50 border-muted">
+                      <CardContent className="pt-6">
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="font-medium">ID da Transação:</span>
+                            <span className="text-muted-foreground font-mono">{pixTransactionId}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-medium">Valor:</span>
+                            <span className="text-muted-foreground">R$ 0,01</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-medium">Descrição:</span>
+                            <span className="text-muted-foreground">Verificação LGPD</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
                 
-                <div className="space-y-3">
+                {/* Action Buttons */}
+                <div className="flex flex-col space-y-3 max-w-md mx-auto">
                   <Button 
                     data-testid="simulate-pix-payment"
                     className="w-full"
@@ -606,16 +688,18 @@ function LGPDRequestsContent() {
           {/* Identity Verified */}
           {identityVerified && !submittingRequest && !successMessage && (
             <Card data-testid="identity-verified">
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2" data-testid="request-submitted">
-                    ✅ Identidade verificada - Processando solicitação...
-                  </h3>
-                  <p className="text-muted-foreground mb-2">
-                    {getSuccessMessage()}
-                  </p>
-                  <div className="space-y-1 text-sm text-muted-foreground">
+              <CardContent className="pt-8">
+                <div className="flex flex-col items-center text-center space-y-4">
+                  <CheckCircle className="h-16 w-16 text-green-500" />
+                  <div className="space-y-3">
+                    <h3 className="text-xl font-semibold" data-testid="request-submitted">
+                      ✅ Identidade verificada - Processando solicitação...
+                    </h3>
+                    <p className="text-muted-foreground">
+                      {getSuccessMessage()}
+                    </p>
+                  </div>
+                  <div className="space-y-2 text-sm text-muted-foreground max-w-md">
                     <p data-testid="encryption-notice">
                       Sua solicitação está sendo criptografada e enviada automaticamente
                     </p>
@@ -627,6 +711,8 @@ function LGPDRequestsContent() {
               </CardContent>
             </Card>
           )}
+
+
         </div>
       </main>
     </div>

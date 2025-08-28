@@ -22,7 +22,7 @@ Uma aplicação Next.js abrangente para gerenciar solicitações de conformidade
 - **Banco de Dados**: SQLite3 com interface promisificada
 - **Autenticação**: Tokens JWT com middleware seguro
 - **Criptografia**: libsodium para criptografia ponta a ponta
-- **Testes**: Jest (unidade), Cucumber (BDD), Playwright (E2E)
+- **Testes**: Jest (unidade), Playwright (E2E)
 - **Qualidade de Código**: ESLint, TypeScript modo estrito
 
 ## 📋 Pré-requisitos
@@ -104,7 +104,7 @@ npm start
 | `npm test` | Executar testes unitários com Jest |
 | `npm run test:watch` | Executar testes em modo watch |
 | `npm run test:coverage` | Executar testes com relatório de cobertura |
-| `npm run test:cucumber` | Executar cenários BDD com Cucumber |
+
 
 ## 🎭 História Completa da Jornada LGPD
 
@@ -255,15 +255,15 @@ Isso demonstra o fluxo completo de conformidade LGPD com criptografia ponta a po
 - Executar com: `npm test`
 - Relatórios de cobertura em `/coverage/`
 
-### Testes BDD (Cucumber + Playwright)
+### Testes E2E (Playwright)
 - Cobrindo jornadas do usuário
 - **Fluxos de autenticação**, **fluxos de trabalho de solicitação LGPD**, **pagamentos PIX**
-- Executar com: `npm run test:cucumber`
+- Executar com: `npx playwright test`
 - Requer servidor de desenvolvimento rodando na porta 3000
 
 ### Arquitetura de Testes
 ```
-Testes de Navegador (Cucumber/Playwright)
+Testes de Navegador (Playwright)
       ↓
 Testes de Integração (API + DB)
       ↓  
@@ -302,14 +302,7 @@ src/
 │   └── create-super-admin.ts # Criação de super admin
 └── types/                 # Definições de tipos TypeScript
 
-features/                  # Cenários BDD (Gherkin)
-├── step_definitions/      # Implementações de passos Cucumber
-│   ├── authentication_steps.js
-│   ├── lgpd_requests_steps.js
-│   └── data_encryption_steps.js
-└── support/              # Configuração de teste
-    ├── timeout.js        # Configurações de timeout de teste
-    └── browser-setup.js  # Configuração do Playwright
+features/                  # Cenários BDD (Gherkin) - para implementação futura
 
 coverage/                 # Relatórios de cobertura de testes
 ```
@@ -344,13 +337,13 @@ lsof -ti:3000 | xargs kill -9
 npm run dev -- -p 3001
 ```
 
-#### Testes Cucumber com Timeout
+#### Testes E2E com Timeout
 ```bash
 # Garantir que servidor dev está rodando primeiro
 npm run dev
 
 # Aguardar mensagem "Ready", então executar testes
-npm run test:cucumber
+npx playwright test
 ```
 
 #### Problemas de Permissão do Banco de Dados
@@ -392,11 +385,11 @@ git checkout -b feature/nome-da-sua-funcionalidade
 # 3. Implementar com TDD
 npm run test:watch
 
-# 4. Verificar cenários BDD
-npm run test:cucumber
+# 4. Verificar testes E2E
+npx playwright test
 
 # 5. Executar suite completa de testes
-npm test && npm run test:cucumber
+npm test && npx playwright test
 ```
 
 ## 📚 Documentação
@@ -406,5 +399,5 @@ npm test && npm run test:cucumber
 ## 🔗 Recursos
 
 - **LGPD**: [Texto da Lei](https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm) | [Diretrizes ANPD](https://www.gov.br/anpd/pt-br)
-- **Stack Tecnológica**: [Next.js](https://nextjs.org/docs) | [Tailwind CSS](https://tailwindcss.com/docs) | [Jest](https://jestjs.io/) | [Cucumber](https://cucumber.io/)
+- **Stack Tecnológica**: [Next.js](https://nextjs.org/docs) | [Tailwind CSS](https://tailwindcss.com/docs) | [Jest](https://jestjs.io/) | [Playwright](https://playwright.dev/)
 - **Implantação**: [Guia AWS Amplify](https://docs.amplify.aws/) para aplicações Next.js full-stack

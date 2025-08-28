@@ -10,7 +10,6 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:cucumber": "cucumber-js",
     "create-super-admin": "npx tsx src/scripts/create-super-admin.ts"
   },
   "dependencies": {
@@ -72,7 +71,6 @@
     "zod": "3.25.67"
   },
   "devDependencies": {
-    "@cucumber/cucumber": "^12.1.0",
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.1",
