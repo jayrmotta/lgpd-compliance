@@ -63,3 +63,11 @@ Thumbs.db
 
 # Reports
 /reports/
+
+# MCP (Model Context Protocol) files
+.mcp/
+mcp-*.json
+*.mcp
+mcp.config.*
+mcp.log
+mcp-*.log
