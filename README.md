@@ -1,6 +1,6 @@
 # Plataforma de Conformidade LGPD
 
-Uma aplicação Next.js abrangente para gerenciar solicitações de conformidade LGPD (Lei Geral de Proteção de Dados), construída com TypeScript, Tailwind CSS, e seguindo práticas TDD/BDD.
+Uma aplicação Next.js abrangente para gerenciar solicitações de conformidade LGPD (Lei Geral de Proteção de Dados), construída com TypeScript, Tailwind CSS, e seguindo práticas TDD.
 
 ## 🚀 Funcionalidades
 
@@ -210,7 +210,7 @@ João da TechCorp recebe uma notificação sobre a nova solicitação LGPD. Ele 
 João insere sua chave privada de seu gerenciador de senhas. O sistema valida o formato da chave e desbloqueia o dashboard, mostrando "Dashboard Desbloqueado".
 
 O dashboard exibe a solicitação de Ana:
-- **Tipo de Solicitação**: "Acesso aos Dados - REQ-1755288038734-b9kyt20gt"
+- **Tipo de Solicitação**: "Acesso aos Dados - 1755288038734-b9kyt20gt"
 - **Status**: "PENDING" 
 - **Criada**: "15/08/2025 às 20:00"
 - **Prazo**: "30/08/2025 às 20:00" (15 dias)
@@ -302,19 +302,19 @@ src/
 │   └── create-super-admin.ts # Criação de super admin
 └── types/                 # Definições de tipos TypeScript
 
-features/                  # Cenários BDD (Gherkin) - para implementação futura
+features/                  # Arquivos de especificação de funcionalidades
 
 coverage/                 # Relatórios de cobertura de testes
 ```
 
 ## Abordagem de Desenvolvimento
 
-Este projeto segue práticas de **Desenvolvimento Orientado por Comportamento (BDD)** e **Desenvolvimento Orientado por Testes (TDD)**:
+Este projeto segue práticas de **Desenvolvimento Orientado por Testes (TDD)**:
 
-1. **Gherkin Primeiro**: Funcionalidades são definidas usando cenários Gherkin
-2. **Vermelho-Verde-Refatorar**: Escrever testes que falham, fazer passar, então refatorar
-3. **Código Limpo**: Seguindo princípios SOLID e nomenclatura significativa
-4. **Segurança Primeiro**: Modelo de segurança zero-trust com configuração baseada em ambiente
+1. **Teste Primeiro**: Escrever testes que falham, fazer passar, então refatorar
+2. **Código Limpo**: Seguindo princípios SOLID e nomenclatura significativa
+3. **Segurança Primeiro**: Modelo de segurança zero-trust com configuração baseada em ambiente
+4. **Especificação por Funcionalidades**: Funcionalidades são definidas usando arquivos de especificação
 
 ## Funcionalidades de Conformidade LGPD
 
@@ -369,7 +369,7 @@ Para solução de problemas mais detalhada, consulte a documentação inline nes
 
 ## 🤝 Contribuindo
 
-1. **Gherkin Primeiro**: Funcionalidades devem começar com cenários Gherkin
+1. **Especificação Primeiro**: Funcionalidades devem começar com arquivos de especificação
 2. **Cobertura de Testes**: Todo código deve ter testes passando
 3. **Padrões de Código**: Seguir convenções estabelecidas e regras de linting
 4. **Segurança Primeiro**: Abordagem zero-trust para todas as implementações
@@ -379,7 +379,7 @@ Para solução de problemas mais detalhada, consulte a documentação inline nes
 # 1. Criar branch de funcionalidade
 git checkout -b feature/nome-da-sua-funcionalidade
 
-# 2. Escrever cenários Gherkin
+# 2. Escrever especificações de funcionalidades
 # Editar arquivos em features/
 
 # 3. Implementar com TDD

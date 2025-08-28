@@ -37,7 +37,7 @@ export async function generateIdentityVerification(requestId: string): Promise<I
 export async function validateIdentity(verificationRequest: IdentityVerificationRequest): Promise<IdentityVerificationResponse> {
   const { requestId, cpf, isMock } = verificationRequest;
   
-  // Validate CPF (from Gherkin scenarios)
+  // Validate CPF (from feature specifications)
   if (!validateCPF(cpf)) {
     return {
       success: false,
@@ -48,7 +48,7 @@ export async function validateIdentity(verificationRequest: IdentityVerification
   
   // Handle mock verification (from development scenario)
   if (isMock) {
-    const verificationHash = await hashData(`MOCK-VERIFICATION-${requestId}-${cpf}-${Date.now()}`);
+    const verificationHash = await hashData(`${requestId}-${cpf}`);
     return {
       success: true,
       message: 'Mock verification successful',
@@ -59,7 +59,7 @@ export async function validateIdentity(verificationRequest: IdentityVerification
   
   // Development mode bypass - allow verification with valid CPF in development
   if (isDevelopmentMode()) {
-    const verificationHash = await hashData(`DEV-VERIFICATION-${requestId}-${cpf}-${Date.now()}`);
+    const verificationHash = await hashData(`${requestId}-${cpf}`);
     return {
       success: true,
       message: 'Development verification successful',
@@ -86,7 +86,7 @@ export function isDevelopmentMode(): boolean {
 
 /**
  * Validate CPF format and basic rules
- * Based on Gherkin scenarios using CPF "123.456.789-00"
+ * Based on feature specifications using CPF "123.456.789-00"
  */
 export function validateCPF(cpf: string): boolean {
   // Remove formatting
@@ -102,7 +102,7 @@ export function validateCPF(cpf: string): boolean {
     return false;
   }
   
-  // From Gherkin scenarios - validate specific test cases
+  // From feature specifications - validate specific test cases
   if (cpf === '123.456.789-00') return true;
   if (cpf === '000.000.000-00') return false;
   

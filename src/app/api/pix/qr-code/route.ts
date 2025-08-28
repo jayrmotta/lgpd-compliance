@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     const description = body.description || 'Verificação LGPD - Exercício de Direito';
 
     // Generate unique transaction ID
-    const transactionId = `PIX-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const transactionId = Math.random().toString(36).substr(2, 9);
     
 
     // Create PIX string (mock format)

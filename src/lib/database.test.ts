@@ -26,8 +26,8 @@ describe('Database Models - LGPD Compliance', () => {
     await dbManager.close();
   });
 
-  describe('LGPD Request Creation - Based on Gherkin Scenarios', () => {
-    it('should create data access request as described in Gherkin scenario', async () => {
+  describe('LGPD Request Creation - Based on Feature Specifications', () => {
+  it('should create data access request as described in feature specification', async () => {
       // Given: I am submitting a data access request (from lgpd_requests.feature)
       const cpfHash = await hashData('123.456.789-00');
       const requestData = {
@@ -38,14 +38,14 @@ describe('Database Models - LGPD Compliance', () => {
         reason: 'I want to see what personal data you have',
         description: 'Please provide all my personal information',
         cpf_hash: cpfHash,
-        pix_transaction_hash: 'PIX-123456789'
+        pix_transaction_hash: '123456789'
       };
 
       // When: I submit the request
       const requestId = await dbManager.createLGPDRequest(requestData);
 
       // Then: Request should be created with proper ID format
-      expect(requestId).toMatch(/^REQ-\d{13}-[a-z0-9]{9}$/);
+      expect(requestId).toMatch(/^[a-z0-9]{9}$/);
       
       // And: Request should appear in user's requests with correct status
       const userRequests = await dbManager.getUserLGPDRequests('user-subject@example.com');
@@ -55,7 +55,7 @@ describe('Database Models - LGPD Compliance', () => {
       expect(userRequests[0].reason).toBe('I want to see what personal data you have');
     });
 
-    it('should create data deletion request as described in Gherkin scenario', async () => {
+    it('should create data deletion request as described in feature specification', async () => {
       // Given: I am submitting a data deletion request
       const cpfHash = await hashData('123.456.789-00');
       const requestData = {
@@ -66,7 +66,7 @@ describe('Database Models - LGPD Compliance', () => {
         reason: 'I no longer want to use the service',
         description: 'Please delete all my data completely',
         cpf_hash: cpfHash,
-        pix_transaction_hash: 'PIX-DELETE-123'
+        pix_transaction_hash: '123'
       };
 
       // When: I submit the deletion request
@@ -81,7 +81,7 @@ describe('Database Models - LGPD Compliance', () => {
       expect(userRequests[0].description).toBe('Please delete all my data completely');
     });
 
-    it('should create data correction request as described in Gherkin scenario', async () => {
+    it('should create data correction request as described in feature specification', async () => {
       // Given: I am submitting a data correction request
       const cpfHash = await hashData('123.456.789-00');
       const requestData = {
@@ -92,7 +92,7 @@ describe('Database Models - LGPD Compliance', () => {
         reason: 'My address information is incorrect',
         description: 'Please update my address to: New Street, 123',
         cpf_hash: cpfHash,
-        pix_transaction_hash: 'PIX-CORRECTION-123'
+        pix_transaction_hash: '123'
       };
 
       // When: I submit the correction request
@@ -132,7 +132,7 @@ describe('Database Models - LGPD Compliance', () => {
     });
   });
 
-  describe('Request Status Management - Based on Gherkin Scenarios', () => {
+  describe('Request Status Management - Based on Feature Specifications', () => {
     let requestId: string;
 
     beforeEach(async () => {
@@ -211,7 +211,7 @@ describe('Database Models - LGPD Compliance', () => {
       );
 
       // Then: Encrypted data should be stored with proper ID
-      expect(encryptedId).toMatch(/^ENC-\d{13}-[a-z0-9]{9}$/);
+      expect(encryptedId).toMatch(/^[a-z0-9]{9}$/);
 
       // And: Encrypted data should be retrievable
       const retrievedData = await dbManager.getEncryptedLGPDData(requestId);
@@ -238,8 +238,8 @@ describe('Database Models - LGPD Compliance', () => {
     });
   });
 
-  describe('Request History - Based on Gherkin Scenario', () => {
-    it('should show requests history as described in Gherkin scenario', async () => {
+  describe('Request History - Based on Feature Specification', () => {
+  it('should show requests history as described in feature specification', async () => {
       // Given: I have previously submitted requests (from lgpd_requests.feature line 70-74)
       const cpfHash = await hashData('123.456.789-00');
       const userId = 'user-subject@example.com';

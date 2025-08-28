@@ -2,7 +2,7 @@ import sqlite3 from 'sqlite3';
 import { promisify } from 'util';
 import path from 'path';
 
-// Types based on Gherkin scenarios
+// Types based on feature specifications
 export type LGPDRequestType = 'ACCESS' | 'DELETION' | 'CORRECTION' | 'PORTABILITY';
 export type LGPDRequestStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
 
@@ -177,7 +177,7 @@ export class DatabaseManager {
   async createLGPDRequest(request: Omit<LGPDRequest, 'id' | 'created_at' | 'response_due_at'>): Promise<string> {
     if (!this.dbRun) throw new Error('Database not initialized');
 
-    const id = `REQ-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const id = Math.random().toString(36).substr(2, 9);
     const created_at = new Date();
     const response_due_at = new Date(created_at.getTime() + (15 * 24 * 60 * 60 * 1000)); // 15 days from creation
 
@@ -201,7 +201,7 @@ export class DatabaseManager {
   ): Promise<string> {
     if (!this.dbRun) throw new Error('Database not initialized');
 
-    const id = `ENC-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const id = Math.random().toString(36).substr(2, 9);
     
     await this.dbRun(`
       INSERT INTO encrypted_lgpd_data (id, request_id, encrypted_blob)

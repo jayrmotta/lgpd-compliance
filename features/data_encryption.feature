@@ -41,7 +41,7 @@ Feature: Secure Data Protection
     When they view pending requests
     Then they should see my request listed with:
       | field       | value                    |
-      | ID da Solicitação  | REQ-[generated-id]       |
+      | ID da Solicitação  | [generated-id]       |
       | Tipo        | Acesso a Dados           |
       | Status      | Pendente                 |
       | Enviado     | [timestamp]              |

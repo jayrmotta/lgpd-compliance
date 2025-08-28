@@ -102,4 +102,4 @@ Feature: LGPD Request Submission
     When my request is being submitted
     Then I should see "Your request is being encrypted before submission"
     And I should see "The company will only see encrypted data until they process your request"
-    And I should see "Request submitted successfully with ID: REQ-"
+    And I should see "Request submitted successfully with ID:"

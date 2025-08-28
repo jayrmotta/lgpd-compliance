@@ -10,7 +10,7 @@ describe('Identity Verification API - Simplified from PIX Payment', () => {
   describe('Identity Verification Setup - From LGPD Request Scenarios', () => {
     it('should generate identity verification instructions', async () => {
       // Given: I am submitting a data access request
-      const requestId = 'REQ-test-123';
+      const requestId = 'test-123';
       
       // When: System prepares identity verification
       const verificationData = await generateIdentityVerification(requestId);
@@ -22,11 +22,11 @@ describe('Identity Verification API - Simplified from PIX Payment', () => {
     });
   });
 
-  describe('Identity Verification - From Gherkin Scenarios', () => {
+  describe('Identity Verification - From Feature Specifications', () => {
     it('should validate identity with correct CPF as in scenario', async () => {
       // Given: Valid identity verification data from scenario
       const verificationRequest: IdentityVerificationRequest = {
-        requestId: 'REQ-test-123',
+        requestId: 'test-123',
         cpf: '123.456.789-00',
         isMock: true // Use mock verification for testing
       };
@@ -44,7 +44,7 @@ describe('Identity Verification API - Simplified from PIX Payment', () => {
     it('should handle wrong CPF as described in scenario', async () => {
       // Given: Identity verification with wrong CPF (from line 64)
       const verificationRequest: IdentityVerificationRequest = {
-        requestId: 'REQ-test-123',
+        requestId: 'test-123',
         cpf: '000.000.000-00'
       };
       
@@ -83,7 +83,7 @@ describe('Identity Verification API - Simplified from PIX Payment', () => {
     it('should handle mock verification with CPF entry', async () => {
       // Given: Mock verification mode
       const mockRequest: IdentityVerificationRequest = {
-        requestId: 'REQ-mock-test',
+        requestId: 'mock-test',
         cpf: '123.456.789-00',
         isMock: true
       };
@@ -116,7 +116,7 @@ describe('Identity Verification API - Simplified from PIX Payment', () => {
   describe('Integration with LGPD Request Flow', () => {
     it('should demonstrate complete simplified flow', async () => {
       // Given: Complete LGPD request flow with simplified verification
-      const requestId = 'REQ-integration-test';
+      const requestId = 'integration-test';
       
       // Step 1: Generate identity verification instructions
       const verificationData = await generateIdentityVerification(requestId);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { authenticatedFetch } from '@/lib/auth-fetch';
@@ -138,7 +138,7 @@ function LGPDRequestsContent() {
     }
 
     try {
-      // Generate PIX QR Code
+      // Generate PIX QR Code (both development and production)
       const response = await authenticatedFetch('/api/pix/qr-code', {
         method: 'POST',
         body: JSON.stringify({
@@ -165,65 +165,9 @@ function LGPDRequestsContent() {
     }
   };
 
-  const handleDevVerification = async () => {
-    if (!cpf) {
-      setVerificationError('Por favor, insira o CPF');
-      return;
-    }
-    
-    // Validate CPF format
-    const cpfRegex = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/;
-    if (!cpfRegex.test(cpf) || cpf === '000.000.000-00') {
-      setVerificationError('CPF inválido. Use o formato 123.456.789-00');
-      return;
-    }
 
-    try {
-      setVerificationError('');
-      setIdentityVerified(true);
-      
-      // Automatically proceed to final submission after development verification
-      setTimeout(() => {
-        handleFinalSubmit();
-      }, 1000); // Brief delay to show verification success
 
-    } catch (error) {
-      console.error('Development verification error:', error);
-      setVerificationError('Erro na verificação de desenvolvimento');
-    }
-  };
-
-  const handlePixPaymentSimulation = async () => {
-    try {
-      const response = await authenticatedFetch('/api/pix/verify', {
-        method: 'POST',
-        body: JSON.stringify({
-          transactionId: pixTransactionId,
-          cpf: cpf
-        })
-      });
-
-      if (!response.ok) {
-        setVerificationError('Falha na verificação PIX');
-        return;
-      }
-
-      setPixVerified(true);
-      setIdentityVerified(true);
-      setVerificationError('');
-      
-      // Automatically proceed to final submission after PIX verification
-      setTimeout(() => {
-        handleFinalSubmit();
-      }, 1000); // Brief delay to show verification success
-
-    } catch (error) {
-      console.error('PIX verification error:', error);
-      setVerificationError('Erro na verificação PIX');
-    }
-  };
-
-  const handleFinalSubmit = async () => {
+  const handleFinalSubmit = useCallback(async () => {
     setSubmittingRequest(true);
     setSubmissionError('');
     
@@ -247,7 +191,7 @@ function LGPDRequestsContent() {
       }
 
       // Success - show brief confirmation and redirect immediately
-      const requestId = data.data?.requestId || 'REQ-' + Date.now();
+      const requestId = data.data?.requestId || Math.random().toString(36).substr(2, 9);
       const encrypted = data.data?.encrypted;
       
       let message = `✅ Solicitação LGPD criada com sucesso!\n\nID: ${requestId}\n\n`;
@@ -271,7 +215,36 @@ function LGPDRequestsContent() {
       setSubmissionError('SERVER_ERROR');
       setSubmittingRequest(false);
     }
-  };
+  }, [router, selectedRequestType, reason, description, cpf]);
+
+  // Auto-verify PIX payment in development mode
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development' && showPixFlow && !pixVerified) {
+      const timer = setTimeout(async () => {
+        try {
+          // Simulate PIX payment verification
+          const response = await authenticatedFetch('/api/pix/verify', {
+            method: 'POST',
+            body: JSON.stringify({
+              transactionId: pixTransactionId,
+              cpf: cpf
+            })
+          });
+
+          if (response.ok) {
+            setPixVerified(true);
+            setIdentityVerified(true);
+            setShowPixFlow(false);
+            handleFinalSubmit();
+          }
+        } catch (error) {
+          console.error('Auto PIX verification error:', error);
+        }
+      }, 5000); // Auto-verify after 8 seconds in development
+      
+      return () => clearTimeout(timer);
+    }
+  }, [showPixFlow, pixVerified, handleFinalSubmit, pixTransactionId, cpf]);
 
   if (!isAuthenticated) {
     return (
@@ -558,20 +531,7 @@ function LGPDRequestsContent() {
                 </div>
                 
                 <div className="space-y-3">
-                  {/* Development Mode Button */}
-                  {process.env.NODE_ENV === 'development' && (
-                    <Button 
-                      data-testid="dev-verification"
-                      variant="outline"
-                      className="w-full"
-                      onClick={handleDevVerification}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Verificação de Desenvolvimento
-                    </Button>
-                  )}
-                  
-                  {/* Production PIX Button */}
+                  {/* PIX Verification Button */}
                   <Button 
                     data-testid="generate-pix-qr"
                     className="w-full"
@@ -648,15 +608,6 @@ function LGPDRequestsContent() {
                 
                 {/* Action Buttons */}
                 <div className="flex flex-col space-y-3 max-w-md mx-auto">
-                  <Button 
-                    data-testid="simulate-pix-payment"
-                    className="w-full"
-                    onClick={handlePixPaymentSimulation}
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Simular Pagamento Realizado
-                  </Button>
-                  
                   <Button 
                     variant="outline"
                     className="w-full"
