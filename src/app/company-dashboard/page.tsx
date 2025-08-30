@@ -315,17 +315,19 @@ function CompanyDashboardPage() {
 
           {/* Message Display */}
           {message && (
-            <Alert className={message.type === 'success' ? 'border-green-200 bg-green-50' : 
-                             message.type === 'error' ? 'border-red-200 bg-red-50' : 
-                             'border-blue-200 bg-blue-50'}>
+            <Alert variant={
+              message.type === 'success' ? 'success' :
+              message.type === 'error' ? 'destructive' :
+              'info'
+            }>
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   {message.type === 'success' ? (
-                    <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                    <CheckCircle className="h-4 w-4 mr-2" />
                   ) : message.type === 'error' ? (
-                    <AlertCircle className="h-4 w-4 text-red-600 mr-2" />
+                    <AlertCircle className="h-4 w-4 mr-2" />
                   ) : (
-                    <Clock className="h-4 w-4 text-blue-600 mr-2" />
+                    <Clock className="h-4 w-4 mr-2" />
                   )}
                   <AlertDescription className="text-sm">
                     {message.text}
@@ -390,8 +392,8 @@ function CompanyDashboardPage() {
             <div className="space-y-6">
               
               {/* Success Notice */}
-              <Alert className="border-green-200 bg-green-50">
-                <CheckCircle className="h-4 w-4 text-green-600" />
+              <Alert variant="success">
+                <CheckCircle className="h-4 w-4" />
                 <AlertDescription>
                   <span className="font-semibold">{getUIMessage('dashboard_unlocked_title')}</span>
                   <br />
@@ -448,7 +450,7 @@ function CompanyDashboardPage() {
                               <CardContent className="pt-0">
                                 <div className="bg-muted/50 rounded-lg p-4 space-y-4">
                                   <div className="flex items-center">
-                                    <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                                    <CheckCircle className="h-4 w-4 text-primary mr-2" />
                                     <span className="font-medium text-sm">{getUIMessage('requests_decrypted_content')}</span>
                                   </div>
                                   
@@ -463,15 +465,12 @@ function CompanyDashboardPage() {
                                       <p className="font-medium">{decrypted.cpf}</p>
                                     </div>
                                     
-                                    <div className="md:col-span-2">
-                                      <span className="text-muted-foreground font-medium">{getUIMessage('requests_reason')}</span>
-                                      <p className="font-medium">{decrypted.reason}</p>
-                                    </div>
-                                    
-                                    <div className="md:col-span-2">
-                                      <span className="text-muted-foreground font-medium">{getUIMessage('requests_description')}</span>
-                                      <p className="font-medium">{decrypted.description}</p>
-                                    </div>
+                                    {decrypted.description && (
+                                      <div className="md:col-span-2">
+                                        <span className="text-muted-foreground font-medium">{getUIMessage('requests_description')}</span>
+                                        <p className="font-medium">{decrypted.description}</p>
+                                      </div>
+                                    )}
                                   </div>
 
                                   <Separator />

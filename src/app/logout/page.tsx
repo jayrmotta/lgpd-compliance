@@ -17,9 +17,9 @@ export default function LogoutPage() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+    <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="text-center">
-        <p className="text-gray-100">Fazendo logout...</p>
+        <p className="text-foreground">Fazendo logout...</p>
       </div>
     </div>
   );

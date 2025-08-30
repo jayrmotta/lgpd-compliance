@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/jwt';
 import { initializeDatabase, getCompanyMetadata } from '@/lib/database-v2';
-import { getKeyFingerprint } from '@/lib/crypto';
+
 
 interface APIResponse {
   code: string;
@@ -50,7 +50,6 @@ export async function GET(request: NextRequest) {
             id: company.id,
             name: company.name,
             publicKey: company.public_key,
-            publicKeyFingerprint: getKeyFingerprint(company.public_key),
             createdAt: company.created_at
           }
         } as APIResponse,

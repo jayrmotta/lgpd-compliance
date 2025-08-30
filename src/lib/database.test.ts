@@ -35,7 +35,6 @@ describe('Database Models - LGPD Compliance', () => {
 
         type: 'ACCESS' as LGPDRequestType,
         status: 'PENDING' as LGPDRequestStatus,
-        reason: 'I want to see what personal data you have',
         description: 'Please provide all my personal information',
         cpf_hash: cpfHash,
         pix_transaction_hash: '123456789'
@@ -52,7 +51,6 @@ describe('Database Models - LGPD Compliance', () => {
       expect(userRequests).toHaveLength(1);
       expect(userRequests[0].type).toBe('ACCESS');
       expect(userRequests[0].status).toBe('PENDING');
-      expect(userRequests[0].reason).toBe('I want to see what personal data you have');
     });
 
     it('should create data deletion request as described in feature specification', async () => {
@@ -63,7 +61,6 @@ describe('Database Models - LGPD Compliance', () => {
 
         type: 'DELETION' as LGPDRequestType,
         status: 'PENDING' as LGPDRequestStatus,
-        reason: 'I no longer want to use the service',
         description: 'Please delete all my data completely',
         cpf_hash: cpfHash,
         pix_transaction_hash: '123'
@@ -89,7 +86,6 @@ describe('Database Models - LGPD Compliance', () => {
 
         type: 'CORRECTION' as LGPDRequestType,
         status: 'PENDING' as LGPDRequestStatus,
-        reason: 'My address information is incorrect',
         description: 'Please update my address to: New Street, 123',
         cpf_hash: cpfHash,
         pix_transaction_hash: '123'
@@ -101,7 +97,6 @@ describe('Database Models - LGPD Compliance', () => {
       // Then: Request should be created
       const userRequests = await dbManager.getUserLGPDRequests('user-subject@example.com');
       expect(userRequests[0].type).toBe('CORRECTION');
-      expect(userRequests[0].reason).toBe('My address information is incorrect');
     });
 
     it('should calculate response due date as 15 days from creation', async () => {
@@ -112,7 +107,6 @@ describe('Database Models - LGPD Compliance', () => {
 
         type: 'ACCESS' as LGPDRequestType,
         status: 'PENDING' as LGPDRequestStatus,
-        reason: 'Test request',
         description: 'Test description',
         cpf_hash: cpfHash
       };
@@ -142,7 +136,6 @@ describe('Database Models - LGPD Compliance', () => {
 
         type: 'ACCESS',
         status: 'PENDING',
-        reason: 'Test request',
         description: 'Test description',
         cpf_hash: cpfHash
       });
@@ -187,7 +180,6 @@ describe('Database Models - LGPD Compliance', () => {
 
         type: 'ACCESS',
         status: 'PENDING',
-        reason: 'Test request',
         description: 'Test description',
         cpf_hash: cpfHash
       });
@@ -229,7 +221,6 @@ describe('Database Models - LGPD Compliance', () => {
 
       // Then: Metadata should not contain sensitive data
       const request = companyRequests[0];
-      expect(request.reason).toBe('Test request'); // Only what user explicitly put in reason
       expect(request.description).toBe('Test description'); // Only description field
       
       // And: No direct access to encrypted content through metadata
@@ -251,7 +242,6 @@ describe('Database Models - LGPD Compliance', () => {
 
         type: 'ACCESS',
         status: 'PENDING',
-        reason: 'Access request',
         description: 'Access description',
         cpf_hash: cpfHash
       });
@@ -262,7 +252,6 @@ describe('Database Models - LGPD Compliance', () => {
 
         type: 'DELETION',
         status: 'PROCESSING',
-        reason: 'Deletion request',
         description: 'Deletion description',
         cpf_hash: cpfHash
       });
@@ -273,7 +262,6 @@ describe('Database Models - LGPD Compliance', () => {
 
         type: 'CORRECTION',
         status: 'COMPLETED',
-        reason: 'Correction request',
         description: 'Correction description',
         cpf_hash: cpfHash
       });

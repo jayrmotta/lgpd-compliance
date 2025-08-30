@@ -89,7 +89,7 @@ function DashboardContent() {
         return <Badge className="bg-accent/10 text-accent border-accent/20">Pendente</Badge>
       case "processing":
       case "processando":
-        return <Badge className="bg-blue-100 text-blue-800 border-blue-200">Processando</Badge>
+        return <Badge variant="processing">Processando</Badge>
       case "rejected":
       case "failed":
         return <Badge variant="destructive">Rejeitada</Badge>

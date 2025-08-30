@@ -11,8 +11,7 @@ export interface LGPDRequest {
   user_id: string;
   type: LGPDRequestType;
   status: LGPDRequestStatus;
-  reason: string;
-  description: string;
+  description?: string; // Optional description from user
   cpf_hash: string; // Hashed CPF for privacy
   pix_transaction_hash?: string;
   created_at: Date;
@@ -124,8 +123,7 @@ export class DatabaseManager {
           user_id TEXT NOT NULL,
           type TEXT NOT NULL CHECK(type IN ('ACCESS', 'DELETION', 'CORRECTION', 'PORTABILITY')),
           status TEXT NOT NULL CHECK(status IN ('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED')),
-          reason TEXT NOT NULL,
-          description TEXT NOT NULL,
+          description TEXT,
           cpf_hash TEXT NOT NULL,
           pix_transaction_hash TEXT,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -157,20 +155,9 @@ export class DatabaseManager {
   }
 
   private async runMigrations(): Promise<void> {
-    if (!this.dbRun) throw new Error('Database not initialized');
-
-    try {
-      // Migration: Add password_temporary column if it doesn't exist
-      await this.dbRun(`
-        ALTER TABLE users ADD COLUMN password_temporary BOOLEAN DEFAULT 0
-      `).catch(() => {
-        // Column already exists, ignore error
-      });
-    } catch {
-      // Migration errors are generally safe to ignore if the column already exists
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Migration completed (some steps may have been skipped)');
-      }
+    // No migrations for now - we'll recreate the DB from scratch
+    if (process.env.NODE_ENV === 'development') {
+      console.log('No migrations needed - using fresh schema');
     }
   }
 
@@ -183,12 +170,12 @@ export class DatabaseManager {
 
     await this.dbRun(`
       INSERT INTO lgpd_requests (
-        id, user_id, type, status, reason, description, 
+        id, user_id, type, status, description, 
         cpf_hash, pix_transaction_hash, created_at, response_due_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       id, request.user_id, request.type, request.status,
-      request.reason, request.description, request.cpf_hash, request.pix_transaction_hash,
+      request.description, request.cpf_hash, request.pix_transaction_hash,
       created_at.toISOString(), response_due_at.toISOString()
     ]);
 
@@ -226,7 +213,6 @@ export class DatabaseManager {
       user_id: row.user_id,
       type: row.type as LGPDRequestType,
       status: row.status as LGPDRequestStatus,
-      reason: row.reason,
       description: row.description,
       cpf_hash: row.cpf_hash,
       pix_transaction_hash: row.pix_transaction_hash,
@@ -250,7 +236,6 @@ export class DatabaseManager {
       user_id: row.user_id,
       type: row.type as LGPDRequestType,
       status: row.status as LGPDRequestStatus,
-      reason: row.reason,
       description: row.description,
       cpf_hash: row.cpf_hash,
       pix_transaction_hash: row.pix_transaction_hash,

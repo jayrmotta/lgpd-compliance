@@ -3,7 +3,6 @@
 import { Shield, Users, FileText, Lock, CheckCircle, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-client";
 import { TopBar } from "@/components/layout/top-bar";

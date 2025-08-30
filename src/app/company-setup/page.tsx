@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { generateKeyPair, getKeyFingerprint } from '@/lib/crypto';
+import { generateKeyPair } from '@/lib/crypto';
 import { withAuth } from '@/lib/auth-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,8 +12,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Shield, AlertTriangle, CheckCircle, Copy, Download, Key, Building2, Save } from 'lucide-react';
+import { Shield, AlertTriangle, CheckCircle, Copy, Key, Building2, Save } from 'lucide-react';
 import { TopBar } from '@/components/layout/top-bar';
+import { getUIMessage } from '@/lib/translations';
 
 function CompanySetupPage() {
   const router = useRouter();
@@ -33,7 +34,7 @@ function CompanySetupPage() {
       setShowInstructions(true);
     } catch (error) {
       console.error('Failed to generate keys:', error);
-      setMessage({ type: 'error', text: 'Failed to generate encryption keys. Please try again.' });
+      setMessage({ type: 'error', text: getUIMessage('setup_error_generate_keys') });
     } finally {
       setIsGenerating(false);
     }
@@ -41,39 +42,12 @@ function CompanySetupPage() {
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
-    setMessage({ type: 'success', text: `${label} copied to clipboard!` });
+    setMessage({ type: 'success', text: `${label} ${getUIMessage('setup_success_copied')}` });
     // Clear message after 3 seconds
     setTimeout(() => setMessage(null), 3000);
   };
 
-  const downloadKeys = () => {
-    if (!keyPair) return;
 
-    const keyData = {
-      companyName: companyName.trim(),
-      publicKey: keyPair.publicKey,
-      privateKey: keyPair.secretKey,
-      fingerprint: getKeyFingerprint(keyPair.publicKey),
-      generatedAt: new Date().toISOString(),
-      instructions: 'Save the private key in your password manager. NEVER share it or store it on servers.'
-    };
-
-    const blob = new Blob([JSON.stringify(keyData, null, 2)], { 
-      type: 'application/json' 
-    });
-    
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    const fileName = companyName.trim() 
-      ? `${companyName.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}-encryption-keys-${Date.now()}.json`
-      : `company-encryption-keys-${Date.now()}.json`;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
 
   const registerPublicKey = async () => {
     if (!keyPair || !companyName.trim()) return;
@@ -117,23 +91,19 @@ function CompanySetupPage() {
           
           {/* Message Display */}
           {message && (
-            <Alert className={
-              message.type === 'success' ? 'border-green-200 bg-green-50' :
-              message.type === 'error' ? 'border-red-200 bg-red-50' :
-              'border-blue-200 bg-blue-50'
+            <Alert variant={
+              message.type === 'success' ? 'success' :
+              message.type === 'error' ? 'destructive' :
+              'info'
             }>
               {message.type === 'success' ? (
-                <CheckCircle className="h-4 w-4 text-green-600" />
+                <CheckCircle className="h-4 w-4" />
               ) : message.type === 'error' ? (
-                <AlertTriangle className="h-4 w-4 text-red-600" />
+                <AlertTriangle className="h-4 w-4" />
               ) : (
-                <Shield className="h-4 w-4 text-blue-600" />
+                <Shield className="h-4 w-4" />
               )}
-              <AlertDescription className={
-                message.type === 'success' ? 'text-green-800' :
-                message.type === 'error' ? 'text-red-800' :
-                'text-blue-800'
-              }>
+              <AlertDescription>
                 <div className="flex items-center justify-between">
                   <span className="whitespace-pre-wrap">{message.text}</span>
                   <Button
@@ -149,21 +119,7 @@ function CompanySetupPage() {
             </Alert>
           )}
           
-          {/* Security Notice */}
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              <div className="space-y-2">
-                <h3 className="font-semibold">Critical Security Information</h3>
-                <ul className="text-sm space-y-1">
-                  <li>• Private keys are generated in your browser and NEVER sent to our servers</li>
-                  <li>• You must save your private key securely (password manager recommended)</li>
-                  <li>• If you lose your private key, encrypted data cannot be recovered</li>
-                  <li>• Never share your private key or store it on company servers</li>
-                </ul>
-              </div>
-            </AlertDescription>
-          </Alert>
+
 
           {!keyPair && (
             <Card>
@@ -218,7 +174,7 @@ function CompanySetupPage() {
               {/* Generated Keys */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center text-green-600">
+                  <CardTitle className="flex items-center text-primary">
                     <CheckCircle className="h-5 w-5 mr-2" />
                     Chaves de Criptografia Geradas com Sucesso
                   </CardTitle>
@@ -228,23 +184,7 @@ function CompanySetupPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Key Fingerprint (for identification)</Label>
-                    <div className="flex items-center space-x-2">
-                      <code className="bg-muted px-3 py-2 rounded flex-1 font-mono text-sm">
-                        {getKeyFingerprint(keyPair.publicKey)}
-                      </code>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => copyToClipboard(getKeyFingerprint(keyPair.publicKey), 'Fingerprint')}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Public Key (safe to share)</Label>
+                    <Label>{getUIMessage('setup_public_key_label')}</Label>
                     <div className="flex items-center space-x-2">
                       <Textarea
                         readOnly
@@ -255,7 +195,7 @@ function CompanySetupPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => copyToClipboard(keyPair.publicKey, 'Public Key')}
+                        onClick={() => copyToClipboard(keyPair.publicKey, getUIMessage('setup_copy_public_key'))}
                       >
                         <Copy className="h-4 w-4" />
                       </Button>
@@ -263,27 +203,27 @@ function CompanySetupPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-red-600 flex items-center">
+                    <Label className="text-destructive flex items-center">
                       <Shield className="h-4 w-4 mr-2" />
-                      Private Key (KEEP SECRET - Save in Password Manager)
+                      {getUIMessage('setup_private_key_label')}
                     </Label>
                     <div className="flex items-center space-x-2">
                       <Textarea
                         readOnly
                         value={keyPair.secretKey}
-                        className="font-mono text-sm border-red-200 bg-red-50"
+                        className="font-mono text-sm border-destructive/50 bg-destructive/10"
                         rows={3}
                       />
                       <Button
                         variant="destructive"
                         size="sm"
-                        onClick={() => copyToClipboard(keyPair.secretKey, 'Private Key')}
+                        onClick={() => copyToClipboard(keyPair.secretKey, getUIMessage('setup_copy_private_key'))}
                       >
                         <Copy className="h-4 w-4" />
                       </Button>
                     </div>
-                    <p className="text-xs text-red-600">
-                      ⚠️ This is your only chance to save the private key. It will not be shown again.
+                    <p className="text-xs text-destructive">
+                      {getUIMessage('setup_only_chance_warning')}
                     </p>
                   </div>
                 </CardContent>
@@ -298,7 +238,7 @@ function CompanySetupPage() {
                       Próximos Passos
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-6">
                     <ol className="space-y-2 text-sm">
                       <li className="flex items-start">
                         <Badge variant="outline" className="mr-2 mt-0.5">1</Badge>
@@ -306,37 +246,23 @@ function CompanySetupPage() {
                       </li>
                       <li className="flex items-start">
                         <Badge variant="outline" className="mr-2 mt-0.5">2</Badge>
-                        <span><strong>Baixar Backup:</strong> Baixe o arquivo de chaves como backup</span>
-                      </li>
-                      <li className="flex items-start">
-                        <Badge variant="outline" className="mr-2 mt-0.5">3</Badge>
                         <span><strong>Registrar Chave Pública:</strong> Registre a chave pública na plataforma</span>
                       </li>
                       <li className="flex items-start">
-                        <Badge variant="outline" className="mr-2 mt-0.5">4</Badge>
+                        <Badge variant="outline" className="mr-2 mt-0.5">3</Badge>
                         <span><strong>Acessar Dashboard:</strong> Use sua chave privada para descriptografar solicitações LGPD</span>
                       </li>
                     </ol>
                     
-                    <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                      <Button
-                        onClick={downloadKeys}
-                        variant="outline"
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        Download Key File
-                      </Button>
-                      
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="key-saved"
-                          checked={keySaved}
-                          onCheckedChange={(checked) => setKeySaved(checked as boolean)}
-                        />
-                        <Label htmlFor="key-saved" className="text-sm">
-                          I have saved my private key securely
-                        </Label>
-                      </div>
+                    <div className="flex items-center space-x-2 pt-4">
+                      <Checkbox
+                        id="key-saved"
+                        checked={keySaved}
+                        onCheckedChange={(checked) => setKeySaved(checked as boolean)}
+                      />
+                      <Label htmlFor="key-saved" className="text-sm">
+                        Salvei minha chave privada de forma segura
+                      </Label>
                     </div>
                     
                     {keySaved && (
@@ -346,7 +272,7 @@ function CompanySetupPage() {
                         size="lg"
                       >
                         <CheckCircle className="h-4 w-4 mr-2" />
-                        Register Public Key & Continue
+                        Registrar Chave Pública e Continuar
                       </Button>
                     )}
                   </CardContent>

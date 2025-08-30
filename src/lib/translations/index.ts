@@ -57,7 +57,6 @@ export const uiMessages: TranslationMap = {
   'requests_due': 'Prazo',
   'requests_decrypted_content': '🔓 Conteúdo Descriptografado:',
   'requests_user_email': 'Email do Usuário:',
-  'requests_reason': 'Motivo:',
   'requests_description': 'Descrição:',
   'requests_process_button': 'Processar Solicitação',
   'requests_complete_button': 'Marcar como Concluída',
@@ -78,6 +77,15 @@ export const uiMessages: TranslationMap = {
   'error_company_public_key_missing': 'Chave pública da empresa não encontrada. Por favor, recarregue a página.',
   'error_fetch_metadata': 'Falha ao carregar metadados da empresa',
   'error_fetch_requests': 'Falha ao carregar solicitações LGPD:',
+
+  // Company Setup
+  'setup_public_key_label': 'Chave Pública',
+  'setup_private_key_label': 'Chave Privada (Secreta - Salve no Gerenciador de Senhas)',
+  'setup_only_chance_warning': '⚠️ Esta é sua única chance de salvar a chave privada. Ela não será mostrada novamente.',
+  'setup_copy_public_key': 'Chave Pública',
+  'setup_copy_private_key': 'Chave Privada',
+  'setup_error_generate_keys': 'Falha ao gerar chaves de criptografia. Tente novamente.',
+  'setup_success_copied': 'Copiado para a área de transferência!',
 };
 
 // Function to get translation for server response codes

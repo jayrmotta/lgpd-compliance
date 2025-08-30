@@ -12,7 +12,6 @@ Feature: LGPD Request Submission
     When I select "Solicitação de Acesso a Dados"
     And I fill in the request details:
       | field       | value                                    |
-      | reason      | I want to see what personal data you have |
       | description | Please provide all my personal information |
     And I click "Enviar Solicitação"
     Then I should see identity verification section
@@ -27,7 +26,6 @@ Feature: LGPD Request Submission
     When I select "Solicitação de Exclusão de Dados"
     And I fill in the request details:
       | field       | value                           |
-      | reason      | I no longer want to use the service |
       | description | Please delete all my data completely |
     And I click "Enviar Solicitação"
     Then I should see identity verification section
@@ -41,7 +39,6 @@ Feature: LGPD Request Submission
     When I select "Solicitação de Correção de Dados"
     And I fill in the request details:
       | field       | value                                  |
-      | reason      | My address information is incorrect     |
       | description | Please update my address to: New Street, 123 |
     And I click "Enviar Solicitação"
     Then I should see identity verification section

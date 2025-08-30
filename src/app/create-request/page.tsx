@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { authenticatedFetch } from '@/lib/auth-fetch';
+import { hashData } from '@/lib/crypto';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -18,7 +19,6 @@ function CreateRequestContent() {
   const searchParams = useSearchParams();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [selectedRequestType, setSelectedRequestType] = useState('');
-  const [reason, setReason] = useState('');
   const [description, setDescription] = useState('');
   const [showVerification, setShowVerification] = useState(false);
   const [cpf, setCpf] = useState('');
@@ -111,8 +111,8 @@ function CreateRequestContent() {
 
 
   const handleSubmitRequest = () => {
-    if (!selectedRequestType || !reason || !description) {
-      setFormError('Por favor, preencha todos os campos');
+    if (!selectedRequestType) {
+      setFormError('Por favor, selecione um tipo de solicitação');
       return;
     }
     
@@ -168,13 +168,15 @@ function CreateRequestContent() {
     setSubmissionError('');
     
     try {
+      // Hash CPF client-side for security
+      const cpfHash = await hashData(cpf);
+      
       const response = await authenticatedFetch('/api/lgpd-requests', {
         method: 'POST',
         body: JSON.stringify({
           type: selectedRequestType,
-          reason,
-          description,
-          cpf
+          description: description || undefined, // Only send if not empty
+          cpf_hash: cpfHash
         })
       });
 
@@ -211,7 +213,7 @@ function CreateRequestContent() {
       setSubmissionError('SERVER_ERROR');
       setSubmittingRequest(false);
     }
-  }, [router, selectedRequestType, reason, description, cpf]);
+  }, [router, selectedRequestType, description, cpf]);
 
   // Auto-verify PIX payment in development mode
   useEffect(() => {
@@ -309,24 +311,13 @@ function CreateRequestContent() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Motivo da solicitação</label>
-                  <Input
-                    type="text"
-                    data-testid="reason-input"
-                    value={reason}
-                    onChange={(e) => setReason(e.target.value)}
-                    placeholder="Ex: Quero verificar meus dados pessoais"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Descrição detalhada</label>
+                  <label className="text-sm font-medium">Descrição (opcional)</label>
                   <Textarea
                     data-testid="description-input"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     rows={4}
-                    placeholder="Forneça mais detalhes sobre sua solicitação..."
+                    placeholder="Forneça detalhes adicionais sobre sua solicitação (opcional)..."
                   />
                 </div>
                 
@@ -401,12 +392,12 @@ function CreateRequestContent() {
               <CardContent className="space-y-6">
                 {/* Development Mode Notice */}
                 {process.env.NODE_ENV === 'development' && (
-                  <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
-                    <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <Alert variant="info">
+                    <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
                       <div className="space-y-1">
-                        <p className="font-semibold text-blue-900 dark:text-blue-100">Modo de Desenvolvimento Ativo</p>
-                        <p className="text-sm text-blue-700 dark:text-blue-300">Em desenvolvimento, você pode usar verificação simplificada sem PIX.</p>
+                        <p className="font-semibold">Modo de Desenvolvimento Ativo</p>
+                        <p className="text-sm">Em desenvolvimento, você pode usar verificação simplificada sem PIX.</p>
                       </div>
                     </AlertDescription>
                   </Alert>
@@ -475,7 +466,7 @@ function CreateRequestContent() {
                 <div className="flex flex-col items-center space-y-6">
                   {/* QR Code Container */}
                   <div className="flex flex-col items-center space-y-4">
-                    <div className="bg-white p-6 rounded-lg shadow-sm border">
+                    <div className="bg-background p-6 rounded-lg shadow-sm border border-border">
                       <Image 
                         src={pixQRCode} 
                         alt="QR Code PIX" 
@@ -558,7 +549,7 @@ function CreateRequestContent() {
             <Card data-testid="identity-verified">
               <CardContent className="pt-8">
                 <div className="flex flex-col items-center text-center space-y-4">
-                  <CheckCircle className="h-16 w-16 text-green-500" />
+                  <CheckCircle className="h-16 w-16 text-primary" />
                   <div className="space-y-3">
                     <h3 className="text-xl font-semibold" data-testid="request-submitted">
                       ✅ Identidade verificada - Processando solicitação...

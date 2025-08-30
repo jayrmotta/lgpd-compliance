@@ -15,7 +15,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
           {
             "border-destructive focus-visible:ring-destructive": variant === "error",
-            "border-green-500 focus-visible:ring-green-500": variant === "success",
+            "border-green-500 focus-visible:ring-green-500 dark:border-green-400 dark:focus-visible:ring-green-400": variant === "success",
             "min-h-[60px] px-2 py-1 text-xs": size === "sm",
             "min-h-[100px] px-4 py-3 text-base": size === "lg",
           },

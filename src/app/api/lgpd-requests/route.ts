@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createHash } from 'crypto';
 import { 
   createLGPDRequest, 
   getUserLGPDRequests, 
@@ -9,14 +8,13 @@ import {
   initializeDatabase,
   type LGPDRequestType 
 } from '@/lib/database-v2';
-import { encryptSealedBox, getKeyFingerprint } from '@/lib/crypto';
+import { encryptSealedBox } from '@/lib/crypto';
 import { verifyToken } from '@/lib/jwt';
 
 interface LGPDRequestBody {
   type: LGPDRequestType;
-  reason: string;
-  description: string;
-  cpf: string;
+  description?: string; // Optional description from user
+  cpf_hash: string; // CPF already hashed client-side
 }
 
 interface APIResponse {
@@ -36,20 +34,7 @@ const mapFrontendTypeToDB = (frontendType: string): LGPDRequestType | null => {
   return typeMap[frontendType] || null;
 };
 
-const hashCPF = (cpf: string): string => {
-  return createHash('sha256').update(cpf).digest('hex');
-};
 
-const validateCPF = (cpf: string): boolean => {
-  // Basic CPF format validation
-  const cpfRegex = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/;
-  if (!cpfRegex.test(cpf)) return false;
-  
-  // Mock verification - reject 000.000.000-00
-  if (cpf === '000.000.000-00') return false;
-  
-  return true;
-};
 
 export async function POST(request: NextRequest) {
   try {
@@ -83,10 +68,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { type, reason, description, cpf } = body;
+    const { type, description, cpf_hash } = body;
 
     // Validate required fields
-    if (!type || !reason || !description || !cpf) {
+    if (!type || !cpf_hash) {
       return NextResponse.json(
         { code: 'VALIDATION_REQUIRED_FIELDS_MISSING' } as APIResponse,
         { status: 400 }
@@ -102,13 +87,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate CPF
-    if (!validateCPF(cpf)) {
-      return NextResponse.json(
-        { code: 'PIX_VERIFICATION_FAILED' } as APIResponse,
-        { status: 400 }
-      );
-    }
+
 
     // Initialize database and check for properly configured company
     let companyPublicKey: string;
@@ -140,9 +119,8 @@ export async function POST(request: NextRequest) {
         user_id: userPayload.userId,
         type: dbType,
         status: 'PENDING',
-        reason: `[ENCRYPTED] ${dbType} request`, // Generic reason for metadata
-        description: '[ENCRYPTED] Sensitive data encrypted with sealed box',
-        cpf_hash: hashCPF(cpf)
+        description,
+        cpf_hash: cpf_hash
       });
     } catch (error) {
       console.error('Failed to create LGPD request:', error);
@@ -155,9 +133,8 @@ export async function POST(request: NextRequest) {
     // Encrypt sensitive data with sealed box
     try {
       const sensitiveData = {
-        reason,
         description,
-        cpf,
+        cpf_hash: cpf_hash,
         type: dbType,
         userEmail: userPayload.email,
         timestamp: new Date().toISOString(),
@@ -180,8 +157,7 @@ export async function POST(request: NextRequest) {
           code: 'REQUEST_CREATED',
           data: { 
             requestId,
-            encrypted: true,
-            publicKeyFingerprint: getKeyFingerprint(companyPublicKey)
+            encrypted: true
           }
         } as APIResponse,
         { status: 201 }

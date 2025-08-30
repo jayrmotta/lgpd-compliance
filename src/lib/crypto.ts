@@ -166,21 +166,14 @@ export async function hashData(data: string): Promise<string> {
   return sodium.to_base64(hash);
 }
 
-/**
- * Utility: Convert public key to a short identifier for display
- */
-export function getKeyFingerprint(publicKey: string): string {
-  // Take first 8 characters of the public key for identification
-  return publicKey.substring(0, 8).toUpperCase();
-}
+
 
 /**
  * Demo company public key - private key is managed client-side only
  * In production, companies generate keys offline and register public key
  */
 export const DEMO_COMPANY_PUBLIC_KEY = {
-  key: '', // Will be set from database or generated client-side
-  fingerprint: ''
+  key: '' // Will be set from database or generated client-side
 };
 
 /**
@@ -193,10 +186,9 @@ export async function getOrGenerateDemoPublicKey(): Promise<string> {
     // For demo, generate a consistent key pair client-side and register public key
     const keys = await generateKeyPair();
     DEMO_COMPANY_PUBLIC_KEY.key = keys.publicKey;
-    DEMO_COMPANY_PUBLIC_KEY.fingerprint = getKeyFingerprint(keys.publicKey);
     
     if (process.env.NODE_ENV === 'development') {
-      // Demo company public key generated with fingerprint: ${DEMO_COMPANY_PUBLIC_KEY.fingerprint}
+      // Demo company public key generated
     }
     
     return keys.publicKey;

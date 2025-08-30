@@ -6,7 +6,6 @@ import {
   decryptBox,
   generateNonce,
   hashData,
-  getKeyFingerprint,
   getOrGenerateDemoPublicKey
 } from './crypto';
 
@@ -158,15 +157,7 @@ describe('Crypto Utils', () => {
     });
   });
 
-  describe('getKeyFingerprint', () => {
-    it('should return first 8 characters uppercase', () => {
-      const testKey = 'abcdefghijklmnop';
-      const fingerprint = getKeyFingerprint(testKey);
-      
-      expect(fingerprint).toBe('ABCDEFGH');
-      expect(fingerprint.length).toBe(8);
-    });
-  });
+
 
   describe('demo public key management (for development/testing)', () => {
     it('should generate consistent demo public key', async () => {
@@ -195,7 +186,6 @@ describe('Crypto Utils', () => {
       // Data subject encrypts their LGPD request using company's public key
       const lgpdRequest = JSON.stringify({
         type: 'DATA_ACCESS',
-        reason: 'I want to see my personal data',
         details: 'Please provide all data you have about me',
         cpf: '123.456.789-00',
         timestamp: new Date().toISOString()
@@ -218,7 +208,7 @@ describe('Crypto Utils', () => {
       
       expect(decryptedRequest.type).toBe('DATA_ACCESS');
       expect(decryptedRequest.cpf).toBe('123.456.789-00');
-      expect(decryptedRequest.reason).toBe('I want to see my personal data');
+
     });
   });
 });

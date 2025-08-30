@@ -37,7 +37,7 @@ describe('Textarea', () => {
   it('applies success variant styles', () => {
     render(<Textarea variant="success" data-testid="textarea" />)
     const textarea = screen.getByTestId('textarea')
-    expect(textarea).toHaveClass('border-green-500', 'focus-visible:ring-green-500')
+    expect(textarea).toHaveClass('border-green-500', 'focus-visible:ring-green-500', 'dark:border-green-400', 'dark:focus-visible:ring-green-400')
   })
 
   it('applies small size styles', () => {
