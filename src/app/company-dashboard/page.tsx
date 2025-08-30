@@ -30,9 +30,9 @@ interface EncryptedRequest {
 }
 
 interface DecryptedData {
-  reason: string;
-  description: string;
-  cpf: string;
+  reason?: string;
+  description?: string;
+  cpf_hash?: string; // Hash used for identity validation only
   type: string;
   userEmail: string;
   timestamp: string;
@@ -460,10 +460,7 @@ function CompanyDashboardPage() {
                                       <p className="font-medium">{decrypted.userEmail}</p>
                                     </div>
                                     
-                                    <div>
-                                      <span className="text-muted-foreground font-medium">CPF:</span>
-                                      <p className="font-medium">{decrypted.cpf}</p>
-                                    </div>
+
                                     
                                     {decrypted.description && (
                                       <div className="md:col-span-2">

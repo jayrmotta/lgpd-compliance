@@ -125,83 +125,101 @@ export function TopBar({ title }: TopBarProps) {
 
         {/* Right side - User menu and navigation - Async loading */}
         <div className="flex items-center gap-4">
-          {/* Navigation options for the current role - Show skeleton while loading */}
+          {/* Show loading skeleton */}
           {loading ? (
             <div className="flex items-center gap-2">
               <Skeleton className="h-8 w-20" />
               <Skeleton className="h-8 w-24" />
             </div>
-          ) : user && navigationOptions.length > 0 ? (
-            <div className="flex items-center gap-2">
-              {navigationOptions.map((option) => (
-                <Button
-                  key={option.href}
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => router.push(option.href)}
-                  className="flex items-center gap-2"
-                >
-                  {option.icon}
-                  {option.label}
-                </Button>
-              ))}
-            </div>
-          ) : null}
-
-          {/* User dropdown menu - Show skeleton while loading */}
-          {loading ? (
-            <Skeleton className="h-8 w-8 rounded-full" />
           ) : user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="text-xs">
-                      {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
-                <div className="flex items-center justify-start gap-2 p-2">
-                  <div className="flex flex-col space-y-1 leading-none">
-                    <p className="font-medium text-sm">{user?.email || 'Usuário'}</p>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      {getRoleIcon(user?.role || 'data_subject')}
-                      {getRoleDisplayName(user?.role || 'data_subject')}
+            <>
+              {/* Navigation options for the current role */}
+              {navigationOptions.length > 0 && (
+                <div className="flex items-center gap-2">
+                  {navigationOptions.map((option) => (
+                    <Button
+                      key={option.href}
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => router.push(option.href)}
+                      className="flex items-center gap-2"
+                    >
+                      {option.icon}
+                      {option.label}
+                    </Button>
+                  ))}
+                </div>
+              )}
+
+              {/* User dropdown menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="text-xs">
+                        {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <div className="flex items-center justify-start gap-2 p-2">
+                    <div className="flex flex-col space-y-1 leading-none">
+                      <p className="font-medium text-sm">{user?.email || 'Usuário'}</p>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        {getRoleIcon(user?.role || 'data_subject')}
+                        {getRoleDisplayName(user?.role || 'data_subject')}
+                      </div>
                     </div>
                   </div>
-                </div>
-                
-                <DropdownMenuSeparator />
-                
-                {/* Navigation options in dropdown for mobile */}
-                {navigationOptions.length > 0 && (
-                  <>
-                    {navigationOptions.map((option) => (
-                      <DropdownMenuItem
-                        key={option.href}
-                        onClick={() => router.push(option.href)}
-                        className="flex items-center gap-2"
-                      >
-                        {option.icon}
-                        {option.label}
-                      </DropdownMenuItem>
-                    ))}
-                    <DropdownMenuSeparator />
-                  </>
-                )}
-                
-                <DropdownMenuItem
-                  onClick={handleLogout}
-                  className="flex items-center gap-2 text-destructive focus:text-destructive"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Sair
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : null}
+                  
+                  <DropdownMenuSeparator />
+                  
+                  {/* Navigation options in dropdown for mobile */}
+                  {navigationOptions.length > 0 && (
+                    <>
+                      {navigationOptions.map((option) => (
+                        <DropdownMenuItem
+                          key={option.href}
+                          onClick={() => router.push(option.href)}
+                          className="flex items-center gap-2"
+                        >
+                          {option.icon}
+                          {option.label}
+                        </DropdownMenuItem>
+                      ))}
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="flex items-center gap-2 text-destructive focus:text-destructive"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Sair
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          ) : (
+            /* Show login/register buttons for unauthenticated users */
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => router.push('/login')}
+              >
+                Entrar
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => router.push('/register')}
+              >
+                Cadastrar
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </header>
