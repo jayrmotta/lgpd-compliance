@@ -80,7 +80,7 @@ export const uiMessages: TranslationMap = {
 
   // Company Setup
   'setup_public_key_label': 'Chave Pública',
-  'setup_private_key_label': 'Chave Privada (Secreta - Salve no Gerenciador de Senhas)',
+  'setup_private_key_label': 'Chave Privada',
   'setup_only_chance_warning': '⚠️ Esta é sua única chance de salvar a chave privada. Ela não será mostrada novamente.',
   'setup_copy_public_key': 'Chave Pública',
   'setup_copy_private_key': 'Chave Privada',

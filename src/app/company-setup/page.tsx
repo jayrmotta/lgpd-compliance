@@ -149,12 +149,6 @@ function CompanySetupPage() {
                 </div>
                 
                 <div className="text-center space-y-4">
-                  <p className="text-muted-foreground">
-                    Após informar o nome da empresa, clique abaixo para gerar o par de chaves de criptografia.
-                    Isso criará uma chave pública (para receber solicitações LGPD criptografadas)
-                    e uma chave privada (para descriptografar solicitações).
-                  </p>
-                  
                   <Button
                     onClick={generateCompanyKeys}
                     disabled={isGenerating || !companyName.trim()}

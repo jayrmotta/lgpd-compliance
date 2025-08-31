@@ -430,10 +430,6 @@ function CompanyDashboardPage() {
                                   <CardTitle className="text-base">
                                     {formatRequestType(request.type)} - {request.id}
                                   </CardTitle>
-                                  <CardDescription className="text-sm">
-                                    {getUIMessage('requests_submitted')}: {formatDate(request.created_at)} | 
-                                    {getUIMessage('requests_due')}: {formatDate(request.response_due_at)}
-                                  </CardDescription>
                                 </div>
                                 <Badge variant={
                                   request.status === 'PENDING' ? 'secondary' :
@@ -460,7 +456,17 @@ function CompanyDashboardPage() {
                                       <p className="font-medium">{decrypted.userEmail}</p>
                                     </div>
                                     
-
+                                    <div className="flex gap-4">
+                                      <div>
+                                        <span className="text-muted-foreground font-medium">{getUIMessage('requests_submitted')}</span>
+                                        <p className="font-medium">{formatDate(request.created_at)}</p>
+                                      </div>
+                                      
+                                      <div>
+                                        <span className="text-muted-foreground font-medium">{getUIMessage('requests_due')}</span>
+                                        <p className="font-medium">{formatDate(request.response_due_at)}</p>
+                                      </div>
+                                    </div>
                                     
                                     {decrypted.description && (
                                       <div className="md:col-span-2">

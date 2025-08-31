@@ -403,13 +403,6 @@ function CreateRequestContent() {
                   </Alert>
                 )}
                 
-                <div className="flex flex-col items-center p-6 bg-muted/50 rounded-lg">
-                  <CreditCard className="h-10 w-10 mb-3 text-primary" />
-                  <p className="text-sm font-medium text-muted-foreground">
-                    🔐 Verificação PIX
-                  </p>
-                </div>
-                
                 <div className="space-y-2">
                   <label className="text-sm font-medium">CPF</label>
                   <Input

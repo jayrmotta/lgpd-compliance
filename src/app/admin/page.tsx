@@ -95,21 +95,6 @@ function AdminPage() {
 
       <main className="max-w-2xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0 space-y-6">
-          
-          {/* Warning Notice */}
-          <Alert>
-            <AlertDescription>
-              <div className="flex items-center">
-                <div className="text-2xl mr-3">⚠️</div>
-                <div>
-                  <h3 className="font-semibold">Acesso de Administrador Obrigatório</h3>
-                  <p className="text-sm mt-1">
-                    Esta página é apenas para operadores da plataforma. Usuários admin/funcionário devem ser criados através desta interface.
-                  </p>
-                </div>
-              </div>
-            </AlertDescription>
-          </Alert>
 
           {/* Create User Form */}
           <Card>
@@ -135,21 +120,6 @@ function AdminPage() {
                     </p>
                   )}
                 </div>
-
-                <Alert>
-                  <AlertDescription>
-                    <div className="flex items-center">
-                      <div className="text-lg mr-2">🔐</div>
-                      <div>
-                        <h4 className="font-medium">Senhas Temporárias</h4>
-                        <p className="text-sm">
-                          Todas as senhas criadas por administradores são temporárias. 
-                          O usuário DEVE alterar a senha no primeiro login.
-                        </p>
-                      </div>
-                    </div>
-                  </AlertDescription>
-                </Alert>
 
                 <div className="space-y-4">
                   <Label>Tipo de Senha</Label>
@@ -244,22 +214,6 @@ function AdminPage() {
                   {loading ? 'Criando...' : 'Criar Representante da Empresa'}
                 </Button>
               </form>
-            </CardContent>
-          </Card>
-
-          {/* Instructions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Instruções</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ol className="space-y-2 text-sm text-muted-foreground">
-                <li>1. Crie representantes da empresa usando este formulário</li>
-                <li>2. Envie as credenciais de login para o representante de forma segura</li>
-                <li>3. O usuário pode então acessar /company-setup para gerar chaves de criptografia</li>
-                <li>4. O usuário admin/funcionário usa /company-dashboard para processar solicitações LGPD</li>
-                <li>5. Administradores podem criar funcionários adicionais através de sua própria interface</li>
-              </ol>
             </CardContent>
           </Card>
         </div>
